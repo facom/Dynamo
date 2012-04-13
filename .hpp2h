@@ -1,0 +1,105 @@
+#!/usr/bin/perl
+#GENERATE HEADER FILE FROM A PROGRAM FILE AND A TEMPLATE OF THE HEADER
+$USAGE="Usage:
+
+$0 <filename>
+
+Extract the prototypes from <filename>.cpp append it to <filename>.hpp and generate <filename>.h
+
+Routines prototypes in <filename>.cpp should be enclosed by /*P-*/ and /*-P*/
+
+Example: 
+
+/*P-*/
+real MaxMin(real x,real y)
+/*-P*/
+{
+  return x>y?x:y;
+}
+";
+
+$file=shift @ARGV;
+
+print "Generating $file.h...\n";
+if(!-e "$file.cpp")
+{
+    print "Error: source file $file.cpp does not exists...\n";
+    print $USAGE;
+    exit(1);
+}
+if(!-e "$file.hpp")
+{
+    print "Error: template file $file.hpp does not exists...\n";
+    print $USAGE;
+    exit(1);
+}
+
+
+open(fl,"<$file.cpp");
+@lines=<fl>;chomp @lines;
+close(fl);
+
+$prot="";
+$decl="";
+$ini=$end=0;
+$inid=$endd=0;
+for $line (@lines){
+    # if($line=~/\/\*P-\*\//){
+    # 	$ini=1;
+    # 	$end=0;
+    # 	$prot.="\n";
+    # 	next;
+    # }
+    # elsif($line=~/\/\*-P\*\//){
+    # 	$ini=0;
+    # 	$end=1;
+    # 	$prot.=";\n";
+    # 	next;
+    # }
+
+    if($line=~/\/\*P\*\//){
+    	$ini=1;
+    	$end=0;
+    	$prot.="\n";
+    	next;
+    }
+    elsif($line=~/^{/){
+    	$ini=0;
+    	$end=1;
+    	$prot.=";\n";
+    	next;
+    }
+
+    elsif($line=~/\/\*D\*\// and !$inid){
+	$inid=1;
+	$endd=0;
+	$decl.="\n";
+	next;
+    }
+    elsif($line=~/\/\*D\*\// and $inid){
+	$ini=0;
+	$inid=0;
+	$endd=1;
+	$decl.="\n";
+	next;
+    }
+
+    if($ini){
+	next if($line!~/\w/);
+	$line=~s/^\s+//;
+	$line=~s/\/\*=([^=]+)=\*\//=$1/;
+	$prot.="$line";
+    }
+    elsif($inid){
+	next if($line!~/\w/);
+	$line=~s/^\s+//;
+	$decl.="extern $line\n";
+    }
+}
+
+system("cat $file.hpp > $file.h");
+open(fl,">>$file.h");
+print fl $decl;
+print fl $prot;
+print fl "\n#endif";
+close(fl);
