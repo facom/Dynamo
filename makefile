@@ -27,3 +27,7 @@ clean:
 	@rm -rf *.o *.out *~ 
 	@echo "Done."
 
+updaterepo:
+	@echo -n "Updating repo..."
+	git commit -am "Commit..."
+	git push origin master
