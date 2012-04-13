@@ -1,0 +1,720 @@
+Me recibis por aqui?
+bueno
+
+Listo hermano la cosa es así:
+
+Estructura del paquete
+======================
+
+La herramienta, como lo conversamos una y otra vez en el metro en
+Berlin esta dividida por módulos.  Los módulos son:
+
+bin2sim.cpp: permite convertir de Gadget a ascii
+
+filter.cpp: permite filtrar un archivo ascii de acuerdo al valor de una columna
+
+scalarmap.cpp: permite hacer un mapa sobre una grid de un scalar map
+(por ejemplo la densidad)
+
+updatesim.cpp: hace un update de una simulacion que esta en un archivo
+ascii.  Por update se entiende recalcular cantidades derivadas de las
+posiciones y las velocidades de las particulas.  Así por ejemplo, el
+momentum angular, las coordenadas en cilíndricas, el epsilon, etc.
+
+sort.cpp: ordena un archivo ascii de acuerdo a una columna.
+
+template.cpp   
+
+functions.cpp: contiene funciones de ajuste (mas adelante explico)
+
+dynamo.cpp: es el archivo que contiene todas las rutinas importantes del paquete.
+
+map2dist.cpp: convierte un mapa en un archivo listo para graficar en
+gnuplot como una imagen.
+
+slice.cpp: parte un archivo de datos por columnas y por filas.  Por
+ejemplo podes tener un archivo con 25 columnas y 300 filas y le podes
+decir "deme las columnas 3 y 5 y las filas 100 a 200".
+
+stats.cpp: calcula estadísticas sobre los datos en la columna de un
+archivo de datos ascii.
+
+transform.cpp: convierte a otro sistema de referencia los datos de una
+simulacion que estan en un archivo ascii.
+
+vectormap.cpp: lo mismo que scalar map pero para un campo vectorial
+(velocidad, momentum, momentum angular)
+
+fit.cpp: hace un fit de los datos en una columna de un archivo ascii a
+una funcion que esta almacenada en el archivo functions.cpp.
+
+Hay tres tipos de archivos aquí:
+
+- Archivos binarios: los archivos con los Snapshot en formato Gadget1
+
+- Archivos de simulacion: son la version ascii de los archivos
+  binarios.  Estos archivos contienen 25 columnas (en un momento las
+  describo).
+
+- Archivos de datos: son archivos ascii con datos varios (por ejemplo
+  un histograma).
+
+Los dos últimos tipos de archivos tienen un formato parecido así:
+
+#Las primeras líneas son un encabezado
+#En el encabezado hay información útil
+#La última línea del encabezado contiene la descripción de las
+#columnas del archivo así:
+#1:X	  2:Y
++1.3E8	  -1.0E-2
++1.3E8	  -1.0E-2
++1.3E8	  -1.0E-2
++1.3E8	  -1.0E-2
+
+En seguida vemos un ejemplo.
+
+Compilación y uso
+=================
+
+Para usar los modulos hay que compilarlos:
+
+     $ make all
+
+Si tiene problemas encontrando el "dynamo.h" use:
+   
+    $ alias make="make -r" 
+
+y vuelva a ejecutar el comando anterior.
+
+Una vez compilado vamos a usar el primer y más importante módulo
+"bin2sim" (de binario a simulacion, es decir a formato ascii).
+
+   $ ./bin2sim.out
+
+Todos los módulos traen una ayuda de como se usan en caso de que el
+usuario no pase las opciones correctas o que haya problemas con las
+opciones que paso.
+
+En este caso como no le dí opciones al programa entonces el dice que
+se necesitan: "Error: No simulation name was provided".  Necesitamos
+decirle el nombre de una simulación.  En el directorio data están las
+simulaciones de modo que movamonos adentro de ese directorio:
+
+   $ cd data
+
+Ejecutemos nuevamente el módulo:
+
+   $ ../bin2sim.out
+
+Ahora nos toca usar ".." porque el programa esta en el directorio
+padre.  Lo ideal sería incluir el directorio padre en el "PATH" del
+usuario para evitar el "..", pero dejemos eso para después.
+
+En el directorio data tenemos un archivo de Gadget que se llama
+"SNAP_000".  En este caso el nombre de la simulación es "SNAP" y el
+número del Snapshot es "000"
+
+Toda simulación debe tener ademas del archivo de Snapshot dos archivos
+adicionales:
+
+- SIMULACION.param
+
+- SIMULACION.sub
+
+El .param es el que se uso en Gadget para correr la simulacion.  El
+.sub debe contener la descripción de las subestructuras de la
+simulación usando el formato:
+
+###### Nombre_Subesructura1
+####  Nombre_Subesructura2
+...
+
+Por ejemplo:
+
+20000 1 Halo_DM
+180000 2 Halo_Stars
+50000 3 Thin_Disk
+50000 4 Thick_Disk
+9000 5 Internal_bulge
+4000 6 External_bulge
+
+Indica que las primeras 20,000 particulas pertenecen a la
+subestructura "Halo_DM" identificada en el archivo ascii con el tag
+"1", las *siguientes* 180,000 partículas pertenecen a la subestructura
+"Halo_Stars" identificadas con 2 y así sucesivamente.  Nota que
+20,000+180,000=200,000 partículas son del halo de la galaxia y
+probablemente en Gadget estén identificadas con el mismo ID (1 en este
+caso) de modo que pueden tener la misma masa y el mismo softening
+factor.  Lo interesante es que en "dynamo" las partículas apareceran
+todo el tiempo identificadas de acuerdo a la subestructura así no sean
+identificables por el id de Gadget.
+
+Ejecutemos entonces:
+
+   $../bin2sim.out -s SNAP -n 000 -S
+
+La opción -S es muy importante para que el programa lea el archio
+"SNAP.sub" y haga la clasificación de las partículas por
+subestructuras.  Si no se usa "-S" las subestructuras serán los mismos
+ID de Gadget (0, gas; 1, halo, etc.)
+
+Una vez ejecutado el módulo se produce un nuevo archivo:
+
+    SNAP_000.sim
+
+Este archivo es CENTRAL.  Contiene la versión en ASCII del snapshot
+PERO además tiene MUCHA más información que la utilizada por Gadget. 
+
+ATENCION: este archivo puede ser muy grande. Típicamente ~10 veces mas
+grande que el archivo binario original.  Aún así es manejable por los
+programas y lamentablemente es obligatorio.
+
+Una manera interesante de correr todos los programas es usando las
+opciones "-v" o "-V" que hacen que el programa muestre más información
+(esto es para los que conocen bien los intringulis internos del
+paquete), siendo la opción "-V" la que da más información adicional:
+
+   $../bin2sim.out -V -s SNAP -n 000 -S
+
+En este caso por ejemplo el después de leer los datos del binario
+muestra la información del encabezado de Gadget (SIMULATION CHECK) y
+otras informaciones de interés.  La muestra dos veces porque en la
+primera esta la información fresca tal y como la obtuvo del binario
+pero en la segunda si notas ya está actualizada información adicional:
+momentum angular total, position y velocidad del centro de masa etc.
+
+Otra opción interesante es la opción "-h" que en cualquier momento
+permite obtener una ayuda sobre las opciones o el funcionamiento de un
+módulo:
+
+   $../bin2sim.out -V -s SNAP -n 000 -S -h
+
+Veamos ahora la estructura del archivo ".sim".  El archivo comienza
+con un encabezado que describe lo que hay adentro:
+
+#NTOT,MTOT	313000  +2.9533161e+01
+#NPART.G	0      	200000 	100000 	13000  	0      	0      	
+#MTOT.G. +0.0000000e+00 +2.6731266e+01 +2.4886472e+00 +3.2362521e-01
+ +0.0000000e+00 +0.0000000e+00
+#NSUBS		6
+#SUBS.ID.	1  2  3  4  5  6  
+#SUBS.STR.	Halo_DM Halo_Stars Thin_Disk Thick_Disk Internal_bulge External_bulge 
+#NPART.SIM.	20000   180000  50000   50000   9000    4000    
+#MTOT.SIM. +2.6797400e+00 +2.4060978e+01 +1.2452594e+00 +1.2452594e+00
+ +2.2406992e-01 +9.9578328e-02
+#ANG.MOM.TOT	+2.0666730e+02 -2.0584782e+02 +7.2048297e+04
+#POSIT.CM	+1.9495438e-03 +9.8970525e-02 +9.2669241e-02
+#VELOC.CM	+1.0026553e-02 +1.1882714e-01 +3.8431067e-02
+#Z,OL,HO,BOX	+0.0000000e+00 +0.0000000e+00 +1.0000000e+00 +0.0000000e+00
+#REF.FRAME	0 
+#1:sid 2:pid 3:tid 4:gtype 5:m 6:h 7:pos 10:vel 13:posc 16:velc 19:j
+ 22:r 23:vc 24:jc 25:eps
+
+Todo se autoexplica. La última línea del encabezado sin embargo
+enumera las columnas que tiene este archivo (25 en total).  La mayoría
+se autoexplican pero otras merecen más atención:
+
+1:sid - Este es el orden en el que el conversor se encontro las
+partículas en el archivo.
+
+2:pid - Este es el ID de la partícula en la simulación asignado por Gadget
+
+3:tid - Este es el tipo de partícula de acuerdo a la clasificación por
+subestructuras.
+
+4:gtype - Este es el tipo de partícula de acuerdo a Gadget (0,1,2,3,4,5)
+
+7:pos,10:vel - Las columnas 7, 8 y 9 tienen las componentes
+cartesianas de la posición.  Las 10, 11 y 12 las componentes
+cartesianas de la velocidad.
+
+13:posc,16:velc - Aquí están la posición y velocidad en cilíndricas.
+Hay que tener cuidado porque para evitar redundancias la columna 15
+que debería tener la componente z de la posición (tercera componente
+cilíndrica) y que coincide con la columna 9 (tercera componente
+cartesiana) la he reemplazado por el ángulo "theta" (tercera
+componente esférica).  Queda así: columna 13, R; columna 14, phi;
+columna 15, theta.  En el caso de la velocidad no se cambio nada.
+
+
+19:j - Las columnas 19,20 y 21 tienen las componentes cartesianas del
+momentum angular de la partícula respecto al origen de coordenadas del
+sistema.
+
+22:r - Distancia al origen de coordenadas
+
+23:vc - Velocidad circular respecto al origen de coordenadas
+
+24:jc - Momentum angular circular respecto al origen de coordenadas (jc = m vc r)
+
+25:eps - Parámetro epsilon (epsilon = jz/jc)
+
+
+Una vez tenemos el archivo ascii el análisis puede comenzar.
+
+Conversión a otro sistema de referencia
+=======================================
+
+Una tarea típica antes de comenzar es posicionar los datos de la
+simulación en un sistema de referencia apropiado (el del centro de
+masa y el momentum angular total por ejemplo).
+
+Para hacer eso se usa el módulo "transform.out":
+
+   $ ../transform.out
+
+Ejecutando esto vemos cuáles son las opciones.  Básicamente hay que
+decirle al módulo cuál es el origen de coordenadas, cuál es la
+velocidad del sistema de referencia y cuál es el vector de orientación
+(j) que se usará para convertir las posiciones.  La idea normalmente
+es que se use aquí lo que aparece en el header del archivo de
+simulación así:
+
+   $ ../transform.out -s SNAP_000.sim -o +1.9495438e-03,+9.8970525e-02,+9.2669241e-02 
+		 -e +1.0026553e-02,+1.1882714e-01,+3.8431067e-02 
+		 -j +2.0666730e+02,-2.0584782e+02,+7.2048297e+04
+
+Como se puede ver el centro de masa casi que esta en el origen y la
+velocidad es casi nula.  Igualmente el momentum angular esta orientado
+en la dirección de z casi completamente.  Aún así esto producirá
+cambios visibles en la posicion y velocidad de las partículas al
+operar la transformación.
+
+La transformación de coordenadas no escribe un archivo nuevo sino que
+reescribe el archivo existente.  Si se quiere modificar este
+comportamiento debe usarse la opción "-t":
+
+
+   $ ../transform.out -s SNAP_000.sim -t SNAP_000.sim.trn
+     		 -o +1.9495438e-03,+9.8970525e-02,+9.2669241e-02 
+		 -e +1.0026553e-02,+1.1882714e-01,+3.8431067e-02 
+		 -j +2.0666730e+02,-2.0584782e+02,+7.2048297e+04
+
+Una convención que he usado es la de superponer las extensiones de los
+archivos para dejar registro de las operaciones que se van operando
+sobre ellos.  Así por ejemplo el archio "sim.trn" viene de convertir
+de binario a ascii (.sim) y después de pasar a otro sistema de
+referencia (.trn).  Esto va a ser más evidente en lo sucesivo.
+
+Si se examina el header del archivo .trn, que tiene el mismo formato
+del archivo .sim se verá algo nuevo:
+
+   $ head -n 15 SNAP_000.sim.trn
+
+A pesar de que se hizo la transformación el momentum angular total, la
+posicion del centro de masa y la velocidad del CM siguen siendo la
+misma.  Eso no tiene sentido.  La razón es que la transformación solo
+cambio la posición y velocidad de las partículas pero no actualizo el
+header y posiblemente tampoco actualizo por ejemplo las coordenadas
+cilíndricas de las partículas o sus momentos angulares respecto al
+nuevo sistema de referencia.  Para hacer eso se usa el módulo updatesim.out:
+
+   $ ../updatesim.out -f SNAP_000.sim.trn
+
+Si se vuelve a revisar el header file los valores deben haber cambiado.
+
+Extrayendo datos
+================
+
+Una vez tenemos todos los datos de la simulación podemos inten tar
+extraer de ella datos que sean de nuestro interés.  Hay tres
+operaciones básicas: filtrado (filter.out), slicing (slice.out) y
+ordenado (sort.out).
+
+Por ejemplo imaginemos que queremos sacar todas las partículas de la
+simulación que son del subtipo 2 (Halo_Stars).  ¿Cómo hacerlo?
+Primero debemos identificar la columna que tiene el subtipo.  Se trata
+de la columna 3 (tid).  Necesitamos entonces filtrar los datos de la
+simulacion para que extraigamos todas las particulas cuyo valor de la
+columna 3 sea exactamente igual a 2:
+
+  $ ../filter.out 
+
+Las opciones son en este caso:
+
+  $ ../filter.out -f SNAP_000.sim.trn -n 25 -c 3 -e 2
+
+Es MUY IMPORTANTE saber cuántas columnas tiene el archivo (25).  La
+opción -e permite decir que el filtrado se hace buscando coincidencia
+en el valor (e-qual).
+
+Como puede verse el produce un nuevo archivo "SNAP_000.sim.trn.fil" y
+reporta que encontro 180000 particulas (como era de esperarse). El
+archivo ".fil" tiene el mismo formato de ".sim" o ".trn" pero tiene
+todavía un defecto.  Veamos el header:
+
+#NTOT,MTOT      313000  +2.9533161e+01
+#NPART.G        0       200000  100000  13000   0       0 
+...
+
+En el header todavía dice que el archivo contiene 313000 partículas.
+La razón es que el filtrado no implica necesariamente una
+actualización de los datos del header.  En ese caso volvemos a usar el
+"updatesim.out":
+
+  $ ../updatesim.out SNAP_000.sim.trn.fil
+
+Si volvemos a revisar el header ahora los valores aparecen correctos:
+
+#NTOT,MTOT	180000  +2.4060978e+01
+#NPART.G	0      	180000 	0      	0      	0      	0      	
+#MTOT.G. +0.0000000e+00 +2.4060978e+01 +0.0000000e+00 +0.0000000e+00
+ +0.0000000e+00 +0.0000000e+00
+#NSUBS		6
+#SUBS.ID.	1  2  3  4  5  6  
+#SUBS.STR.	Halo_DM Halo_Stars Thin_Disk Thick_Disk Internal_bulge External_bulge 
+#NPART.SIM.	0       180000  0       0       0       0       
+
+Inclusive el ha vuelto a recontar las partículas y ha encontrado que
+el número de partículas de tipo 1 de Gadget ahora es de solamente
+180,000, como era de esperarse.
+
+Una cosa muy inteseasante es que el centro de masa y el momentum
+angular total no coinciden con el del sistema completo, como era de
+esperarse.
+
+Si se quisiera hacer un análisis físico sobre estas partículas lo
+mejor sería pasarlas al sistema de referencia del centro de masa
+usando el modulo "transform.out".
+
+Otro ejemplo.  Imaginemos que queremos sacar todas las partículas que
+están dentro de un radio de 100 unidades del programa del centro de la
+caja de simulación.  ¿Cómo se haría?:
+
+     $ ../filter.out -f SNAP_000.sim.trn -n 25 -c 22 -m 0.0 -M 100.0 
+
+En realidad no hay necesidad en este caso de dar un mínimo.  Si el
+mínimo no se incluye como opción el usa el valor más negativo de un
+número real (~ -1E+38).  De nuevo después del filtro hay que hacer un
+update si lo que se quiere es después realizar algun tipo de filtrado
+físico interesante.
+
+Estadísticas de los datos
+=========================
+
+Hay un módulo para realizar estadísticas sobre las columnas de los
+archivos de simulacion "stats.out".  
+
+Imaginemos por ejemplo que queremos saber como se distribuye
+estadísticamente el valor del parámetro epsilon (columna 25).  Para
+hacerlo ejecutamos:
+
+    $ ../stats.out 
+
+Con las opciones correctas:
+
+    $ ../stats.out -v -f SNAP_000.sim.trn -n 25 -c 25 -b 100
+
+En este caso estamos diciendole explícitamente al programa que para
+hacer las estadítsicas use un binning de 100 ventanas.  De nuevo si se
+usa la opción -v el programa nos dará otras informaciones útiles.
+
+Como puede verse el programa por defecto utiliza un tipo de binning
+lineal (bines de la misma anchura), pero eso puede modificarse usando
+la opción -t.  
+
+La ejecución de stats.out produce un nuevo archivo con extensión .his,
+en este ejemplo "SNAP_000.sim.trn.his" (de nuevo nótese la utilidad
+que tiene el apilamiento de las extensiones que permite hacer un
+seguimiento a las operaciones que se han aplicado en la simulación
+original: binario a ascii -> transformación -> estadística).
+
+El archivo .his tiene un formato completamente diferente del archivo
+.sim o .trn.  Veamos el encabezado:
+
+#Data file: SNAP_000.sim.trn, Column: 25
+#Typebin: l
+#Numbins: 100
+#NPB: 3130
+#Tot.stats(Ntot,Min,Max): 313000,-5.6937814e+00 +3.7219794e+00
+#Stats(mean,median,mode,rms,disp): +5.1382615e-01 +4.9383506e-01
+ +1.0384876e+00 +5.1382615e-01 +4.4980831e-01
+#Quartiles(25,50,75):+1.6796140e-01,+4.9383506e-01,+9.5159725e-01
+#1:xini 2:xmed 3:xend 4:n 5:h 6:f 7:dn 8:dh 9:df 10:F 11:P
+
+El encabezado ahora tiene las propiedades estadísticas básicas de la
+cantidad estudiada, por ejemplo, el máximo, el mínimo, el promedio, la
+moda, la dispersión, etc.  Adicionalmente se muestran los cuartiles
+que pueden llegar a ser también muy útiles.  En este caso por ejemplo
+vemos que solo el 25% de los datos tienen un valor de epsilon menor
+que +0.168 lo que indica que casi todos los valores de epsilon (75%
+para ser exacto) son positivos.
+
+Las columnas del archivo son las siguientes:
+
+1:xini 2:xmed 3:xend - Posición de los extremos y el "centro" del bin
+
+4:n - Número de valores en el bin (frecuencia absoluta)
+
+5:h - Fracción del total de valores que están en el bin (frecuencia relativa)
+
+6:f - Densidad de probabilidad de que el valor este en ese intervalo :
+      f = h / dx, siendo dx el ancho del bin.  Este sería el valor que
+      se compararía con una función de distribución de probabilidad
+      teórica.
+
+7:dn 8:dh 9:df - Errores en las tres cantidades anteriores.  Para ello
+                 se asume de manera muy simple errores Poissonianos,
+                 i.e. dn = sqrt(n)
+
+10:F - Frecuencia acumulada, i.e. número de partículas que tienen un
+       valor menor que el xend de este bin.
+
+11:P - Probabilidad acumulada, i.e. probabilidad de que un valor de la
+       cantidad sea menor que xend.
+
+
+Otro ejemplo.  Imaginemos que queremos calcular cuál es el radio
+cilíndrico dentro del cuál esta contenida la mitad del número de
+partículas en la simulación. ¿Cómo lo hacemos?  Lo primero que tenemos
+que hacer es una estadística de esta cantidad, R.  Para ello
+ejecutamos:
+
+    $ ../stats.out -f SNAP_000.sim.trn -n 25 -c 13 -b 100 -t l
+
+De este modo obtenemos el histograma de R.  Para saber en que R están
+la mitad de las partículas revisamos las propiedades estadísticas de
+la distribución.  Habría dos maneras de hacerlo.  Por un lado
+revisando cuál es el bin para el cuál al frecuencia acumulada es mayor
+o igual al 50% de las partículas (P>=0.5).  En este caso el bin para
+el cual P=0.517 es [23.8,29.8) con valor central de 26.8, de modo que
+el valor buscado estan entre 26.8 y 29.8.  La manera más sencilla
+sería revisar el valor del cuartil 50 en el header que es igual a
+27.92 lo que coincide con el estimativo anterior, pero mejor ES el
+valor buscado.
+
+Un último ejemplo.  Imaginemos ahora que queremos calcular la
+distribución del número de estrellas en dirección vertical dentro de
+un anillo comprendido entre dos valores arbitrarios del radio
+cilíndrico R (esto sería útil por ejemplo para determinar las
+propiedades de la distribución en z como función del radio.  Para ello
+lo primero que debemos hacer es filtrar los datos para escojer los que
+están en el intervalo de R deseado, por ejemplo R en [15,18]:
+
+   $ ../filter.out -f SNAP_000.sim.trn -n 25 -c 13 -m 15 -M 18
+
+A los datos resultantes les hacemos una estadística en z:
+
+   $ ../stats.out -f SNAP_000.sim.trn.fil -n 25 -c 9 -b 10 
+
+Como era de esperarse el promedio de z da muy cercano a 0 y la moda en
+este caso de forma increible esta bastante desplazada hacia arriba
+(-6.28).  La razón no es otra que estamos incluyendo en este análisis
+también las estrellas del halo que están muy por encima del plano del
+disco.
+
+Es interesante notar sin embargo que el número de partículas
+encontradas y como era de esperarse es mayor cerca al plano central de
+la distribución (n = 15086 para z = [-3.4163762e+01,+2.1611100e+01])
+
+Fits
+====
+
+El modulo "fit.out" permite además hacer un ajuste de los datos
+contenidos en columnas arbitrarias de cualquier archivo.  Imaginemos
+que queremos ahora ajustar la distribución vertical que acabamos de
+obtener a una ley del tipo:  N exp(-|z-zmax|/zo).  ¿Cómo hacerlo?
+
+Lo primero que debemos hacer es definir la función de ajuste en el
+archivo functions.cpp:
+
+/*P*/
+real2 gaussianBell(real2 x,pars params)
+{
+  /*
+    ps[0] exp [ - (x-ps[1])^2 / ps[2]^2 ]
+  */
+  real2* ps=(real2*)params;
+  real2 y;
+  
+  y=ps[0]*exp(-(x-ps[1])*(x-ps[1])/(ps[2]*ps[2]));
+
+  return y;
+}
+
+Es importante no dejar de usar el comentario /*P*/ que le permitirá al
+compilador incluir la rutina como parte del paquete.  Además de
+incluir la rutina es necesario definirla apropiadamente en la rutina
+de "identificacion", getFunctions que esta un poco antes en el mismo
+archivo functions.cpp:
+
+/*P*/
+int getFunction(const char funcname[])
+{
+  ...
+  if(strcmp(funcname,"exponentialDistribution")==0){
+    FFunc=exponentialDistribution;
+    FNpars=3;
+    FXtest=1.0;
+  }
+}
+
+Aquí es importante indicar el número de parámetros de la función.  El
+nombre de la función debe estar correctamente e identicamente escrita
+en el condicional y en la definición de la variable FFunc.
+
+Una vez definida la funcion es necesario recompilar el programa fit.out:
+
+   $ make fit.out
+
+Ahora podemos usarlo:
+
+   $ ../fit.out -V -f SNAP_000.sim.trn.fil.his -u exponentialDistribution
+                -p 1,1,1 -n 11 -x 2 -y 6 -e 9
+
+Como puede verse debemos inicializar los parametros de la funcion de
+ajuste en valores apropiados (este es un factor crítico en el exito
+del ajuste).  El archivo tiene 11 columnas (porque es un archivo de
+estadísticas).  Debo especificar la columna con los valores de x (2 en
+este caso que tiene el centro de los bines), la columna con los
+valores de y (6 que tiene el valor de f) y la columna con los valores
+del error en y (9 que tiene el df).  Si no se tienen errores esta
+última opción no es mandatoria y los errores se asumen iguales a la
+unidad.
+
+Es muy interesante en este caso usar la opción de verbosity "-V" para
+tener información detallada del ajuste.  En este caso por ejemplo el
+programa provee información sobre los pasos intermedios del ajuste y
+reporta el número de iteraciones que fueron necesarias para hacer el
+ajuste así como el valor estimado del mismo.
+
+El programa de ajuste devuelve el conjunto de parámetros de la función
+que mejor ajustan los datos, el valor del chisquare y el p-value
+correspondiente.  Nótese que los resultados pueden cambiar si se
+cambia el valor de los parámetros iniciales:
+
+   $ ../fit.out -V -f SNAP_000.sim.trn.fil.his -u exponentialDistribution
+                -p 1,-10,10 -n 11 -x 2 -y 6 -e 9
+
+Esto implica que el ajuste debe realizarse teniendo una idea del valor
+de los parámetros y no se puede hacer un ajuste ciego!
+
+Mapas de campos escalares y vectoriales
+=======================================
+
+Los últimos módulos de interés del paquete son aquellos que permiten
+crear "mapas" de campos escalares y vectoriales.  Un mapa es un
+"histograma" en 3 dimensiones.  Para construir un mapa se divide el
+espacio en celdas formando un grid y se calcula el valor total o
+promedio de un campo escalar o vectorial en el interior de la celda.
+
+Ejemplos interesantes de mapas de campos serían los siguientes:
+
+- Mapa de densidad de número: permite calcular la densidad de número
+  de partículas en un grid.
+
+- Mapa de densidad de masa: lo mismo que el anterior pero para la masa
+  en lugar de para el número.
+
+- Mapa de potencial gravitacional: valor del potencial gravitacional
+  calculado en el centro de la celda de cada grid.
+
+- Mapa de velocidades: valor del vector de velocidad promedio
+  (velocidad del centro de masa) de cada celda en el grid.
+
+En principio se puede crear cualquier tipo de mapa.  Para hacer un
+mapa de un campo escalar se usa:
+
+     $ ../scalarmap.out 
+
+Para hacerlo se necesita escoger el campo escalar deseado
+(number_density, mass_density, gravitational_potential) el tipo de
+sistema de coordenadas que se desean utilizar (por defecto
+cartesianas) el tipo de grid (todavía no es soportado por el paquete),
+los valores extremos de las coordenadas del grid y el número de celdas
+del grid.  Así por ejemplo:
+
+    $ ../scalarmap.out -V -f SNAP_000.sim.trn -s number_density 
+      		       -i -100,-100,- -e 100,100,- -n 30,30,1
+
+En este caso se esta construyendo un grid cartesiano con x entre -100
+y 100, y entre -100 y 100 y z en el rango total de valores permitido
+por los datos (mínimo y máximo valor de z).  El grid se divide en 30
+celdas en x, 30 en y y 1 en z.  Es decir las celdas son rectangulos
+muy grandes en dirección de z.  Este tipo de grid se puede usar por
+ejemplo para estudiar especialmente la distribución de partículas
+proyectada sobre el plano xy.
+
+Como resultado de esta operación se genera un archivo de extensión
+.map que tiene el valor del campo escalar medido en las esquinas
+inferiores de las celdas de la malla.
+
+Una característica poco deseable de los mapas de campos escalares es
+que no tienen el formato típico que se usa para crear representaciones
+gráficas de los campos.  Por ejemplo si quisieramos hacer un gráfico
+del número de partículas como función de x y y necesitaríamos algo con
+el formato
+
+x1 y1  numero11
+x1 y2  numero12
+...
+x1 ym  numero1m
+
+x2 y1  numero21
+x2 y2  numero22
+...
+x2 ym  numero2m
+
+...
+
+xn y1  numeron1
+xn y2  numeron2
+...
+xn ym  numeronm
+
+Se ha desarrollado un modulo que permite la conversión del formato de
+mapa (.map) en un formato que permite su representación gráfica
+(.dst).  Para hacerlo se ejecuta:
+
+    $ ../map2dist.out 
+
+Las opciones del programa son
+
+
+    $ ../map2dist.out -m SNAP_000.sim.trn.map -t 2D -x 0 -y 1
+
+Este programa genera un archivo .dst que puede ser usado en gnuplot
+para crear por ejemplo un gráfico de contornos o una imágen de
+intensidades.  Por ejemplo después de tener el archivo .dst se puede
+ejecutar el siguiente comando en gnuplot:
+
+gnuplot> set view 0,0
+       > set contours 
+       > splot './SNAP_000.sim.trn.map.dst' with pm3d
+
+De la misma manera como se pueden hacer mapas de campos escalares se
+pueden construir mapas de campos vectoriales.  El comando para hacerlo
+es:
+
+    $ ../vectormap.out
+
+Las opciones típicas serían:
+
+    $ ../vectormap.out -f SNAP_000.sim.trn -s velocity 
+                       -i -100,-100,-10 -e 100,100,10 -n 10,10,1
+
+Esto produciría un mapa de velocidades sobre el plano xy.  El mapa de
+velocidades se almacena en un archivo de extensión .vmp.  Este archivo
+no sufre del mismo problema de representación gráfica del mapa de
+campos escalares y puede ser representado gráficamente de forma
+directa:
+
+    > splot './SNAP_000.sim.trn.map.vmp' u 1:2:($3*0):4:5:($6*0) w vec not
+
+Y lo mejor se puede combinar con un campo escalar para producir
+información completa sobre la simulación:
+
+gnuplot> set view 0,0
+       > set contours 
+       > splot './SNAP_000.sim.trn.map.dst' with pm3d
+       > splot './SNAP_000.sim.trn.map.vmp' u 1:2:($3*0):4:5:($6*0) w vec not
+
+Construcción de scripts usando los módulos de dynamo
+====================================================
+
+(En elaboración)
+
+Utilización de dynamo desde un programa en C++
+==============================================
+
+(En elaboración)

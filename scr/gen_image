@@ -1,0 +1,121 @@
+#!/usr/bin/env python
+from dynamo import *
+USAGE="""Usage:
+
+\t./script <simulation_file> <minx>,<miny>,<minz>
+\t         <maxx>,<maxy>,<maxz> <numx>,<numy>,<numz> [<field>]
+
+Examples:
+
+./script SNAP_000.sim -50,-50,- 50,50,- 100,100,1 mass_density
+
+Generate an image for SNAP_000 using the whole range in z and for the
+scalar field mass_density.
+
+"""
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#ROUTINES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#GET PARAMETERS
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#==================================================
+#Files
+#==================================================
+simfile,argv=shiftList(argv)
+if not simfile:
+    errorMsg("No simulation file was provided",USAGE)
+
+if not isfile(simfile):
+    errorMsg("Simulation file '%s' does not exist"%simfile,USAGE)
+
+#==================================================
+#GRID PROPERTIES
+#==================================================
+mins,argv=shiftList(argv)
+maxs,argv=shiftList(argv)
+nums,argv=shiftList(argv)
+
+field,argv=shiftList(argv)
+if not field:
+    field="number_density"
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#EXECUTE PIPELINE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#==================================================
+#CREATE DENSITY MAP
+#==================================================
+print "Generating scalarmap...",
+shellExec(
+    RUN+"scalarmap.out -V -f %s -s %s -i %s -e %s -n %s"%(simfile,field,mins,maxs,nums)
+    )
+print "Done."
+
+#==================================================
+#GENERATE DISTRIBUTION FILE
+#==================================================
+mapfile="%s.map"%simfile
+print "Generating distribution file in plane xy...",
+shellExec(
+    RUN+"map2dist.out -V -m %s -d %s.xy -t 2 -x 0 -y 1"%(mapfile,mapfile))
+print "Done."
+
+print "Generating distribution file in plane xz...",
+shellExec(
+    RUN+"map2dist.out -V -m %s -d %s.xz -t 2 -x 0 -y 2"%(mapfile,mapfile))
+print "Done."
+
+print "Generating distribution file in plane yz...",
+shellExec(
+    RUN+"map2dist.out -V -m %s -d %s.yz -t 2 -x 1 -y 2"%(mapfile,mapfile))
+print "Done."
+
+#==================================================
+#CREATE IMAGE
+#==================================================
+plotfile="plot_img.gpl"
+fp=open(plotfile,"w")
+fp.write("""
+mapfile="%s"
+set pm3d map
+set term png
+
+set xlabel 'x'
+set ylabel 'y'
+mapdata=mapfile.".xy"
+imgfile=mapdata.".png"
+set output imgfile
+splot mapdata
+print "Image file ".imgfile." generated..."
+
+set xlabel 'x'
+set ylabel 'z'
+mapdata=mapfile.".xz"
+imgfile=mapdata.".png"
+set output imgfile
+splot mapdata
+print "Image file ".imgfile." generated..."
+
+set xlabel 'y'
+set ylabel 'z'
+mapdata=mapfile.".yz"
+imgfile=mapdata.".png"
+set output imgfile
+splot mapdata
+print "Image file ".imgfile." generated..."
+"""%mapfile)
+fp.close()
+
+print "Generating images...",
+shellExec("gnuplot %s"%plotfile)
+print "Done."
+
+#==================================================
+#FINISHING
+#==================================================
+exitScript(0)

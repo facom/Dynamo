@@ -39,11 +39,9 @@ Quick start
 
    Then you will be able to get updates using 'git pull'.
 
-2. Place it in a web-available directory at your server
-   (e.g. /var/www/<directory>)
+2. Compile it:
 
-3. Read the installation guide at
-   http://localhost/<directory>/Dynamo/doc/install.html
+      make all
 
 For the contirbutor
 ===================

@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+from dynamo import *
+USAGE="""Usage:
+
+\t./script <simulation_name> <mineps> <maxeps>
+
+Examples:
+
+./script SNAP_000.sim -1.0 2.0
+
+Get the disk from th simulation file.
+"""
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#ROUTINES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#GET PARAMETERS
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+simfile,argv=shiftList(argv)
+if not simfile:
+    errorMsg("No simulation file was provided...",USAGE)
+if not isfile(simfile):
+    errorMsg("Simulation file '%s' does not exist..."%simfile,USAGE)
+
+mineps,argv=shiftList(argv)
+if not mineps:mineps=-MAXREAL
+maxeps,argv=shiftList(argv)
+if not maxeps:maxeps=+MAXREAL
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#EXECUTE PIPELINE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#==================================================
+#HISTOGRAM OF EPSILON
+#==================================================
+print "Filtering particles according to epsilon...",
+shellExec(
+    RUN+"filter.out -V -f %s -n 25 -c 25 -m %s -M %s"%(simfile,mineps,maxeps)
+    )
+print "Done."
+
+#==================================================
+#HISTOGRAM OF EPSILON
+#==================================================
+print "Generating statistics for epsilon...",
+shellExec(
+    RUN+"stats.out -V -f %s.fil -n 25 -c 25 -b 100"%simfile
+    )
+print "Done."
+
+#==================================================
+#PLOT HISTOGRAM
+#==================================================
+plotfile="plot_his.gpl"
+fp=open(plotfile,"w")
+fp.write("""
+datafile='%s.fil.his'
+set term png
+set output datafile.'.png'
+
+plot datafile u 2:5 w his ls 1, '' u 2:5:8 w err ls 1
+"""%simfile)
+fp.close()
+print "Generating histogram...",
+shellExec("gnuplot %s"%plotfile)
+print "Done."
+
+#==================================================
+#ASK FOR A MINIMUM
+#==================================================
+shellExec("display %s.fil.his.png"%simfile)
+mineps=input("Enter the minimum epsilon value:")
+
+#==================================================
+#HISTOGRAM OF EPSILON
+#==================================================
+print "Filtering disk particles...",
+shellExec(
+    RUN+"filter.out -V -f %s -s %s.dsk -n 25 -c 25 -m %s"%(simfile,
+                                                           simfile,
+                                                           mineps)
+    )
+print "Done."
