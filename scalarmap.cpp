@@ -292,7 +292,7 @@ int main(int argc,char *argv[])
 
     xoff=PART_MEMBER(r);
     yoff=PART_MEMBER(posc.y);
-    zoff=PART_MEMBER(posc.x);//THETA IS NOT COMPUTED SO R IS RETURNED
+    zoff=PART_MEMBER(posc.z);
     break;
   }
   dx=(xend-xini)/nx;
@@ -350,7 +350,20 @@ int main(int argc,char *argv[])
 	x=xini+i*dx+dx/2;
 	for(j=0;j<ny;j++){
 	  y=yini+j*dy+dy/2;
-	  point.x=x;point.y=y;point.z=z;
+	  switch(ccoord){
+	  case 'c':
+	    point.x=x;point.y=y;point.z=z;
+	    break;
+	  case 'y':
+	    point.x=x*cos(y);
+	    point.y=x*sin(y);
+	    point.z=z;
+	    break;
+	  case 's':
+	    point.x=x*sin(y)*cos(z);
+	    point.y=x*sin(y)*sin(z);
+	    point.z=z;
+	  }
 	  phi=0;
 	  for(n=0;n<ndata;n++){
 	    d=distVector(parts[n].pos,point);
@@ -384,11 +397,11 @@ int main(int argc,char *argv[])
   fprintf(fs,"%-14s %-14s %-14s\t%-14s\n","#1:X","2:Y","3:Z","4:field");
 
   for(k=0;k<nz;k++){
-    z=zini+k*dz;
+    z=zini+k*dz+dz/2;
     for(i=0;i<nx;i++){
-      x=xini+i*dx;
+      x=xini+i*dx+dx/2;
       for(j=0;j<ny;j++){
-	y=yini+j*dy;
+	y=yini+j*dy+dy/2;
 	/*
 	fprintf(fs,"%+14.7e %14.7e %+14.7e\t%+14.7e\n",
 		x,y,z,fieldmap[i][j][k]);
