@@ -24,8 +24,10 @@ cleandata:
 
 clean:
 	@echo -n "Cleaning..."
-	@rm -rf *.o *.out *~ 
+	@rm -rf *.o *.out *~ scr/*.pyc
 	@echo "Done."
+
+cleanall:cleandata clean
 
 edit:
 	emacs -nw *.cpp *.hpp run .hpp2h
