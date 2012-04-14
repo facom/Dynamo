@@ -1,0 +1,216 @@
+#!/usr/bin/env python
+#coding:utf-8
+from dynamo import *
+
+#Informacion general
+simulation="SNAP"
+numsnapshot="000"
+simfile="%s_%s.sim"%(simulation,numsnapshot)
+
+"""
+################################################################################
+1) Convertir los datos binarios (gadget) en ascii (simulación)
+################################################################################
+"""
+if not isfile(simfile):
+    print "Convirtiendo de binario a ascii...",
+    shellExec(RUN+"bin2sim.out -s %s -n %s -S"%(simulation,numsnapshot))
+    print "Hecho."
+    print "Actualizando header...",
+    shellExec(RUN+"updatesim.out -f %s"%simfile)
+    print "Hecho."
+else:
+    print "El archivo de simulation '%s' ya existe..."%simfile
+
+"""
+################################################################################
+2) Actualizar los valores del header de la simulacion para que el
+   centro de masa y el momentum angular total sean los de los datos
+   leídos.
+################################################################################
+"""
+#YA 
+
+"""
+################################################################################
+3) Transformar el sistema a su centro de masa y a su momentum angular
+   total.
+################################################################################
+"""
+newfile="%s.trn"%simfile
+print "Transforming to CM into '%s'..."%newfile,
+if not isfile(newfile):
+    poscm=getHeader(simfile,"POSIT.CM")
+    velcm=getHeader(simfile,"VELOC.CM")
+    angmom=getHeader(simfile,"ANG.MOM.TOT")
+    shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 1"%(simfile,
+                                                                         newfile,
+                                                                         ",".join(poscm),
+                                                                         ",".join(velcm),
+                                                                         ",".join(angmom)))
+    shellExec(RUN+"updatesim.out -f %s"%newfile)
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+simfile=newfile
+
+"""
+################################################################################
+4) Hacer una estadítica sobre los valores de epsilon para saber cuál
+   es el epsilon crítico de las partículas del disco.
+################################################################################
+"""
+newfile="%s.his"%simfile
+print "Haciendo estadística de los epsilon en '%s'..."%newfile,
+if not isfile(newfile):
+    shellExec(RUN+"stats.out -V -f %s -s %s -n 25 -c 25 -b 100"%(simfile,
+                                                                 newfile))
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+
+"""
+################################################################################
+5) Filtrar los datos para que queden solo las partículas con valores
+   de epsilon mayor a ese valor crítico identificado anteriormente.
+################################################################################
+"""
+"""
+check,status=shellExec("grep -v '#' %s | awk '{print $2,$4}'"%simfile)
+print check
+"""
+epscrit=input("Valor crítico de epsilon:")
+newfile="%s.%.2e.fil"%(simfile,epscrit)
+if not isfile(newfile):
+    print "Filtering disk particles with epscrit=%e..."%epscrit,
+    shellExec(RUN+"filter.out -V -f %s -s %s -n 25 -c 25 -m %e"%(simfile,
+                                                                 newfile,
+                                                                 epscrit
+                                                                 )
+              )
+    shellExec(RUN+"updatesim.out -f %s"%newfile)
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+simfile=newfile
+
+"""
+################################################################################
+6) A la tabla filtrada actualizarle los valores del header.
+################################################################################
+"""
+#YA
+
+"""
+################################################################################
+7) Volver a transformar los valores obtenidos al sistema de referencia
+   del centro de masa y de su momentum angular total.
+################################################################################
+"""
+print "Transforming to the CM of the disk particles '%s'..."%newfile,
+newfile="%s.trn"%simfile
+if not isfile(newfile):
+    poscm=getHeader(simfile,"POSIT.CM")
+    velcm=getHeader(simfile,"VELOC.CM")
+    angmom=getHeader(simfile,"ANG.MOM.TOT")
+    shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 1"%(simfile,
+                                                                         newfile,
+                                                                         ",".join(poscm),
+                                                                         ",".join(velcm),
+                                                                         ",".join(angmom)))
+    shellExec(RUN+"updatesim.out -f %s"%newfile)
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+simfile=newfile
+
+"""
+################################################################################
+8) Realizar una estadística de los valores de R pesada con la masa.
+################################################################################
+"""
+print "Performing statistics in R saving in '%s'..."%newfile,
+newfile="%s.his"%simfile
+if not isfile(newfile):
+    shellExec(RUN+"stats.out -V -f %s -s %s -n 25 -c 13 -t g -b 100 -w 5"%(simfile,
+                                                                            newfile)
+              )
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+
+"""
+################################################################################
+9) Buscar en la frecuencia cumulativa en que valor esa frecuencia es
+   mayor del 50% de la masa.
+################################################################################
+"""
+data=np.loadtxt(newfile)
+x=data[:,1]
+P=data[:,10]
+for i in range(0,x.shape[0]):
+    if P[i]>0.5:
+        R12=x[i]
+        P21=P[i]
+        break
+print "R_1/2 = ",R12
+
+"""
+################################################################################
+10) Haga un mapa de la densidad de masa sobre el plano xy y dibuje
+    sobre el mapa un círculo indicando la posición de R1/2
+################################################################################
+"""
+
+#==================================================
+#CREATING THE MAP
+#==================================================
+newfile="%s.map"%simfile
+print "Creating an xy map in '%s'..."%newfile,
+minR=-2*R12
+maxR=+2*R12
+if not isfile(newfile):
+    shellExec(RUN+"scalarmap.out -V -f %s -m %s -s mass_density -i %e,%e,- -e %e,%e,- -n 30,30,1"%(simfile,newfile,minR,minR,maxR,maxR))
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+simfile=newfile
+
+#==================================================
+#CREATING THE DISTRIBUTION
+#==================================================
+newfile="%s.dst"%simfile
+print "Creating distribution in xy in '%s'..."%newfile,
+if not isfile(newfile):
+    shellExec(RUN+"map2dist.out -V -m %s -d %s -t 2D -x 0 -y 1"%(simfile,newfile))
+    print "Hecho."
+else:
+    print "\n\tArchivo '%s' ya existe..."%newfile
+
+#==================================================
+#GENERATING THE IMAGE
+#==================================================
+print "Plotting dst file '%s'..."%newfile,
+gnuPlot("""
+#CREATING R1/2 CIRCLE
+set table 'circle.dat'
+set param
+splot %e*cos(u),%e*sin(u),0
+unset param
+unset table
+
+#PLOTTING MAP AND CIRCLE
+mapfile='%s'
+
+set view 0,0
+set term png
+set xlabel 'x'
+set ylabel 'y'
+unset ztics
+imgfile=mapfile.".png"
+datafile=mapfile.".dst"
+set output imgfile
+splot datafile w pm3d not, 'circle.dat' w l not
+print "Image file ".imgfile." generated..."
+"""%(R12,R12,simfile))
+print "Hecho."
