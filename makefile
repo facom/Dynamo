@@ -19,7 +19,7 @@ all:dynamo.h
 
 cleandata:
 	@echo -n "Cleaning data..."
-	@rm -rf *.dst *.slc *.fil *.map *.sim *.trn *.fit
+	@make -C data clean
 	@echo "Done."
 
 clean:
