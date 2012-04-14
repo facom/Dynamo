@@ -20,7 +20,7 @@ int main(int argc,char *argv[])
   char simfile[FSIZE]="",mapfile[FSIZE]="";
   char coordinates[FSIZE]="",types[FSIZE]="",type[3][LSIZE],field[FSIZE]="";
   char cini[FSIZE]="",cend[FSIZE]="",ngrid[FSIZE]="";
-  int i,j,k,p,ndata;
+  int i,j,k,n,p,ndata;
   particles parts;
   SHeader sheader;
   char ctype[3],ccoord,cfield;
@@ -342,13 +342,18 @@ int main(int argc,char *argv[])
       else fieldmap[p]+=parts[i].m;
     }
   case 'g':
+    real phi,h;
     for(k=0;k<nz;k++){
       z=zini+k*dz+dz/2;
       for(i=0;i<nx;i++){
 	x=xini+i*dx+dx/2;
 	for(j=0;j<ny;j++){
 	  y=yini+j*dy+dy/2;
-	  
+	  phi=0;
+	  for(n=0;n<ndata;n++){
+	    h=parts[n].h;
+	    phi-=GGAD*parts[n].m*gravSoft(dist,h)/h;
+	  }
 	  p=i+j*nx+k*nx*ny;
 	  fieldmap[p]=phi;
 	}

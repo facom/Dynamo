@@ -1245,3 +1245,29 @@ int fitData(real2* X,real2* Y,real2* E,int Ndata,
   return 0;
 }
 
+/*P*/
+real gravSoft(real x,real h)
+{
+  
+  real kern,u;
+
+  u=x/h;
+
+  if( (u >= 0) && (u < 0.5) )
+    kern = 
+      (16.0/3.0)*u*u - 
+      (48.0/5.0)*pow(u,4) + 
+      (32.0/5.0)*pow(u,5) - (14.0/5.0); 
+  else if((u >= 0.5) && (u < 1.0))
+    kern= 
+      (1.0/(15.0*u)) + 
+      (32.0/3.0)*u*u - 
+      16.0*pow(u,3) + 
+      (48.0/5.0)*pow(u,4) - 
+      (32.0/15.0)*pow(u,5) - 
+      (16.0/5.0);
+  else if(u >= 1.0)
+    kern=-1.0/u;
+  
+  return (-kern);
+}
