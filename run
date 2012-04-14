@@ -2,5 +2,5 @@
 basedir=$(dirname $0)
 program=$1;shift
 
-make -C $basedir $program
+make -rC $basedir $program
 $basedir/$program $@

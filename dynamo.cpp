@@ -1090,6 +1090,31 @@ real2* readColumn(const char fname[],int nlines,int ncols,int col)
   return values;
 }
 
+/*P*/
+real* readColumns(const char fname[],int nlines,int ncols,int col)
+{
+  real *line,*values;
+  char linea[LSIZE]="";
+  file fd=fileOpen(fname,"r");
+ 
+  line=(real*)malloc(ncols*sizeof(real2));
+  values=(real*)malloc(nlines*sizeof(real2));
+
+  //Read values
+  int i=-1;
+  while(1){
+    fgets(linea,sizeof linea,fd);
+    if(feof(fd)) break;
+    if(linea[0]=='#') continue;
+    i++;
+    readLine(linea,line,ncols);
+    values[i]=line[col-1];
+  }
+
+  fclose(fd);
+  return values;
+}
+
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 //ADVANCED NUMERICAL ROUTINES
 //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&

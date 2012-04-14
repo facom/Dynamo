@@ -712,9 +712,132 @@ gnuplot> set view 0,0
 Construcción de scripts usando los módulos de dynamo
 ====================================================
 
-(En elaboración)
+Es posible construir scripts que combinen los distintos módulos de
+dynamo para producir resultados complejos.  Los scripts se pueden
+escribir en cualquier lenguaje de scripting apropiado (bash, perl,
+python, php).  Aquí se recomienda el uso de Python por las
+posibilidades que tiene de realizar procesamiento numérico y gráfico
+con los resultados de los módulos.
+
+dynamo viene ya con algunos scripts en python para ejecutar tareas
+comunes.  Puede revisar el contenido de algunos de esos scripts para
+entender la manera como pueden combinarse el poder de python y de los
+módulos de dynamo para producir resultados muy interesantes.  También
+el paquete incluye un módulo de python, dynamo.py, que puede ser
+importado en los scripts escritos en este lenguaje y que incluye
+algunas variables y rutinas de interés.
+
+Como un ejemplo imagínemos que quiere calcular de forma automática el
+radio cilíndrico dentro del cual la mitad de las partículas de la
+componente discoidal están contenidas.  Para hacerlo es necesario
+realizar varias de las operaciones que han sido descritas aquí con los
+módulos de dynamo.  De forma global las tareas que tenemos que
+realizar son las siguientes:
+
+
+
+
 
 Utilización de dynamo desde un programa en C++
 ==============================================
 
-(En elaboración)
+Creación de un nuevo módulo
+===========================
+
+La mayoría de los módulos de dynamo tienen la misma estructura
+general.
+
+- Declaración de variables de entrada
+- Definición de parámetros por línea de comandos
+- Captura de valores pasados por línea de comandos
+- Validación de valores
+- Código propio del módulo
+
+Los módulos utilizan las herramientas de la librería estándar de C/C++
+para el uso de los parámetros por línea de comandos (getopt).
+
+Lo primero que hay que definir son cuáles serán las opciones del
+módulo que recibirá por la línea de comandos.  Por ejemplo el módulo:
+
+    $ ../scalarmap.out -V -f SNAP_000.sim.trn -s number_density 
+      		       -i -100,-100,- -e 100,100,- -n 30,30,1
+
+recibe las opciones -V,-f,-s,-i-e y -n.  Las opciones validas y su
+comportamiento se definen usando el macro SET_OPTIONS:
+ 
+    SET_OPTIONS(":hvVf:s:i:e:n:");
+
+Aquí el ":" inicial es obligatorio.  Las opciones h,v y V son comunes
+a todos los módulos y se utilizan para obtener una ayuda sobre el
+módulo (h) y para hacer que el módulo reporte información adicional
+sobre la ejecución (v y V).  Las demás son las opciones que define el
+creador del módulo.  Todas las opciones que estén sucedidas por ":"
+son opciones que requieren un valor de entrada.  Por ejemplo la opción
+"f" necesita el nombre del archivo de datos.
+
+A continuación debe definirse el texto de ayuda que será desplegado
+cuando se use la opción -h o cuando haya un error en la entrada de los
+parámetros.  Ese texto se define usando el macro SET_USAGE:
+
+   SET_USAGE("Usage:\n\n./program...");
+
+Si el texto es muy largo se puede crear encerrando cada línea entre
+comillas separadas:
+
+   SET_USAGE(
+"Usage:\n\n"
+"./program..."
+);
+
+Una vez definido el texto de ayuda se procede a capturar las entradas.
+Eso se hace utilizando una un ciclo while y una estructura switch como
+se ilustra a continuación:
+
+  while(ITEROPTIONS){
+    switch(OPTION){
+    case 'f':
+      strcpy(datafile,optarg);
+      break;
+    case 'n':
+      numcols=atoi(optarg);
+      break;
+    //========================================
+    //COMMON
+    //========================================
+    case 'v':
+      VERBOSITY=1;
+      break;
+    case 'V':
+      VERBOSITY=2;
+      break;
+      OPTION_ERRORS;
+    }
+  }
+
+Los valores que se pasan con las opciones se almacenan por defecto en
+la cadena "optarg"- De allí deben copiarse en las cadenas respectivas
+(por ejemplo en datafile) de acuerdo con la opción que se este
+utilizando.  También es posible recibir valores numéricos en la cadena
+optarg.  En este caso es necesario convertirlos usando atoi o atof de
+acuerdo al tipo del valor.
+
+Una vez capturadas las entradas se procede a validar que sean
+correctas o a asignar valores por defecto para las opciones que no
+fueron provistas.  En este caso se recomienda revisar los módulos
+existentes para familiarizarse con la manera como se validan las
+entradas.
+
+El paso final es el de desplegar la información con la que el programa
+trabajara.  Esta información solo es desplegada si se usan las
+opciones -v o -V.  Un ejemplo se presenta a continuación:
+
+  if(VERBOSE(1)){
+    fprintf(stdout,"Datafile: %s\n",datafile);
+    fprintf(stdout,"Der. Int. file: %s\n",derintfile);
+    fprintf(stdout,"Number of columns: %d\n",numcols);
+    fprintf(stdout,"Columns x,y: %d,%d\n",colx,coly);
+    fprintf(stdout,"Number of points in datafile: %d\n",ndata);
+  }
+
+Después de la entrada lo que sigue es el programa en sí mismo.
+

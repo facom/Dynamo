@@ -27,6 +27,9 @@ clean:
 	@rm -rf *.o *.out *~ 
 	@echo "Done."
 
+edit:
+	emacs -nw *.cpp *.hpp run .hpp2h
+
 updaterepo:
 	@echo -n "Updating repo..."
 	git commit -am "Commit..."

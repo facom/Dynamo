@@ -285,6 +285,8 @@ int countLines(const char file[]);
 
 real2* readColumn(const char fname[],int nlines,int ncols,int col);
 
+real* readColumns(const char fname[],int nlines,int ncols,int col);
+
 real2 chiSquare(const gsl_vector* param,pars tmp);
 
 int fitData(real2* X,real2* Y,real2* E,int Ndata,real2 (*func)(real2,pars),int Npars,real2 Params[],real2& cs,real2& pval);
