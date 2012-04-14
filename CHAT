@@ -734,7 +734,50 @@ realizar varias de las operaciones que han sido descritas aquí con los
 módulos de dynamo.  De forma global las tareas que tenemos que
 realizar son las siguientes:
 
-- 
+1) Convertir los datos binarios (gadget) en ascii (simulación)
+
+2) Actualizar los valores del header de la simulacion para que el
+   centro de masa y el momentum angular total sean los de los datos
+   leídos.
+
+3) Transformar el sistema a su centro de masa y a su momentum angular
+   total.
+
+4) Hacer una estadítica sobre los valores de epsilon para saber cuál
+   es el epsilon crítico de las partículas del disco.
+
+5) Filtrar los datos para que queden solo las partículas con valores
+   de epsilon mayor a ese valor crítico identificado anteriormente.
+
+6) A la tabla filtrada actualizarle los valores del header.
+
+7) Volver a transformar los valores obtenidos al sistema de referencia
+   del centro de masa y de su momentum angular total.
+
+8) Realizar una estadística de los valores de R pesada con la masa.
+
+9) Buscar en la frecuencia cumulativa en que valor esa frecuencia es
+   mayor del 50% de la masa.
+
+10) Haga un mapa de la densidad de masa sobre el plano xy y dibuje
+    sobre el mapa un círculo indicando la posición de R1/2
+
+El script de python, que llamaremos "get_r12" debería comenzar por:
+
+   #!/usr/bin/env python
+   from dynamo import *
+
+Sobra decir que para que esto funcione el script debe estar localizado
+en el subdirectorio "scr".  Para ejecutar cualquier tarea use la
+rutina que viene con dynamo.py shellExec junto con el macro RUN para
+referirse a la ubicación de los módulos:
+
+   shellExec(RUN+"bin2sim.out -h")
+
+Esto ejecutará la tarea en silencio es decir sin ninguna salida en
+pantalla.  Las salidas de los modulos y otros mensajes se
+redireccionan automáticamente a un archivo de bitacora con el nombre
+del script y extensión .log, en este caso "get_r12.log".
 
 
 

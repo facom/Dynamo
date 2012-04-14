@@ -261,6 +261,8 @@ int fileExists(char *filename);
 
 int isBlank(char *string);
 
+int isSpace(char *string);
+
 int pause(void);
 
 file fileOpen(const char filename[],const char mode[]);

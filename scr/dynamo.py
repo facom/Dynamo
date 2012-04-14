@@ -89,6 +89,25 @@ def exitScript(status):
     exit(status)
     return 0
 
+def getHeader(datafile,field):
+    f=open(datafile,"r")
+    for line in f:
+        if "#" in line:
+            if field in line:
+                datos=line.strip().split(":")
+                values=" ".join(datos[1:])
+        else:
+            break
+    f.close()
+    return values.strip().split(" ")
+
+def gnuPlot(cmd):
+    plotfile="plot.gpl"
+    fp=open(plotfile,"w")
+    fp.write(cmd);
+    fp.close()
+    shellExec("gnuplot %s"%plotfile)
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #INFORMATION ABOUT THE PROGRAM
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

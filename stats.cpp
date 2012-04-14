@@ -31,7 +31,7 @@ int main(int argc,char *argv[])
   //////////////////////////////////////////////////////////////
   //SET OPTIONS AND USAGE
   //////////////////////////////////////////////////////////////
-  SET_OPTIONS(":hvVf:s:n:c:b:t:N:");
+  SET_OPTIONS(":hvVf:s:n:c:b:t:N:w:");
   SET_USAGE(
 "=======================================================================================\n"
 "Usage:\n\n"
@@ -144,6 +144,7 @@ int main(int argc,char *argv[])
   if(VERBOSE(1)){
     BAR(stdout,'O');
     fprintf(stdout,"Datafile: %s\n",datafile);
+    fprintf(stdout,"Number of datapoints: %d\n",numlines);
     fprintf(stdout,"Statistics file: %s\n",statsfile);
     fprintf(stdout,"Number of columns: %d\n",numcols);
     fprintf(stdout,"Selected column: %d\n",col);
@@ -164,13 +165,25 @@ int main(int argc,char *argv[])
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //READING DATA
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  fprintf(stdout,"Reading data from datafile '%s'...\n",datafile);
+  STPRINTF("Reading data from datafile '%s'...\n",datafile);
+  real2 wntot;
+  real2 *weights;
   real2 *values=readColumn(datafile,numlines,numcols,col);
   if(colw){
-    real2 *weights=readColumn(datafile,numlines,numcols,colw);
-    
+    //==================================================
+    //WEIGHTED AVERAGE
+    //==================================================
+    weights=readColumn(datafile,numlines,numcols,colw);
+    wntot=0;
+    for(i=0;i<numlines;i++) wntot+=weights[i];
+  }else{
+    //==================================================
+    //NORMAL AVERAGE
+    //==================================================
+    weights=(real2*)calloc(numlines,sizeof(real2));
+    for(i=0;i<numlines;i++) weights[i]=1;
+    wntot=numlines;
   }
-
 
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //STATISTICS
@@ -179,11 +192,12 @@ int main(int argc,char *argv[])
   real2 min=MAXREAL,max=MINREAL,mean=0,median=0,rms=0,sd=0;
   real2 q25,q50,q75,mode=MINREAL,nmode=MINREAL;
 
-  fprintf(stdout,"Computing basic statistics...\n",numlines);
+  STPRINTF("Computing basic statistics...\n",numlines);
   //Sort
   gsl_sort(values,1,numlines);
 
   //Basic statistics
+  //COMPUTE THIS STATISTICS BUT IN THE WEIGHTED CASE
   mean=gsl_stats_mean(values,1,numlines);
   sd=gsl_stats_sd(values,1,numlines);
   rms=sqrt((numlines-1)/numlines*sd*sd+mean*mean);
@@ -195,6 +209,7 @@ int main(int argc,char *argv[])
   //Binning
   real2* bins=(real2*)calloc(numbin+1,sizeof(real2));
   real2* nhis=(real2*)calloc(numbin,sizeof(real2));
+  real2* nhisw=(real2*)calloc(numbin,sizeof(real2));
   real2 xini,x,dx,xmed,xend;
 
   switch(typebin){
@@ -227,7 +242,7 @@ int main(int argc,char *argv[])
   }
 
   //Compute the histogram
-  fprintf(stdout,"Computing histogram...\n",numlines);
+  STPRINTF("Computing histogram...\n",numlines);
   ic=0;
   for(i=0;i<numlines;i++){
     //Value of x
@@ -250,11 +265,12 @@ int main(int argc,char *argv[])
     }
     //Increment
     nhis[ic]++;
+    nhisw[ic]+=weights[i];
   }
   if(typebin=='a'){
     numbin=ic+1;
     bins[numbin]=max;
-    fprintf(stdout,"Number of detected bins: %d\n",numbin);
+    STPRINTF("Number of detected bins: %d\n",numbin);
   }
 
   //Compute derivative quantities
@@ -268,7 +284,6 @@ int main(int argc,char *argv[])
   //STORING HISTOGRAM
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   file fs=fileOpen(statsfile,"w");
-
   //Header
   fprintf(fs,"#Data file: %s, Column: %d\n",datafile,col);
   fprintf(fs,"#Typebin: %c\n",typebin);
@@ -278,15 +293,14 @@ int main(int argc,char *argv[])
   fprintf(fs,"#Stats(mean,median,mode,rms,disp): %+14.7e %+14.7e %+14.7e %+14.7e %+14.7e\n",
 	  mean,median,mode,rms,sd);
   fprintf(fs,"#Quartiles(25,50,75):%+14.7e,%+14.7e,%+14.7e\n",q25,q50,q75);
-  fprintf(fs,"%-14s %-14s %-14s %-7s %-14s %-14s ",
+  fprintf(fs,"%-14s %-14s %-14s %-14s %-14s %-14s ",
 	  "#1:xini","2:xmed","3:xend","4:n","5:h","6:f");
   fprintf(fs,"%-14s %-14s %-14s ","7:dn","8:dh","9:df");
-  fprintf(fs,"%-7s %-14s ","10:F","11:P");
+  fprintf(fs,"%-14s %-14s ","10:F","11:P");
   fprintf(fs,"\n");
 
   //Histogram
-  int nh,F;
-  real2 dn,hhis,dh,fhis,df,P;
+  real2 nh,F,dn,hhis,dh,fhis,df,P;
   F=0;
   P=0;
   for(ic=0;ic<numbin;ic++){
@@ -300,32 +314,36 @@ int main(int argc,char *argv[])
     xmed=(xini+xend)/2;
     dx=(xend-xini);
 
-    nh=(int)nhis[ic];
-    hhis=nhis[ic]/numlines;
+    if(colw)
+      nh=nhisw[ic];
+    else
+      nh=nhis[ic];
+
+    hhis=nh/wntot;
     fhis=hhis/dx;
 
     dn=sqrt(nh);
-    dh=dn/numlines;
+    dh=dn/wntot;
     df=dh/dx;
 
     F+=nh;
     P+=hhis;
 
     //xini xend nhis hhis fhis
-    fprintf(fs,"%+14.7e %+14.7e %+14.7e %-7d %+14.7e %+14.7e ",
+    fprintf(fs,"%+14.7e %+14.7e %+14.7e %+14.7e %+14.7e %+14.7e ",
 	    xini,xmed,xend,nh,hhis,fhis);
 
     //Errors
     fprintf(fs,"%+14.7e %+14.7e %+14.7e ",dn,dh,df);
 
     //Cummulative
-    fprintf(fs,"%-7d %+14.7e ",F,P);
+    fprintf(fs,"%+14.7e %+14.7e ",F,P);
 
     fprintf(fs,"\n");
 
   }
   
   fclose(fs);
-  fprintf(stdout,"Histogram file '%s' saved...\n",statsfile);
+  STPRINTF("Histogram file '%s' saved...\n",statsfile);
   return 0;
 }

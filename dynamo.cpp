@@ -393,38 +393,38 @@ int writeSimulation(particles parts,SHeader sheader,char simfile[],int frac/*=1=
   //======================================================================
   //WRITE HEADER
   //======================================================================
-  fprintf(fs,"#NTOT,MTOT\t%-7d %+14.7e\n",sheader.ntot,sheader.mtot);
-  fprintf(fs,"#NPART.G\t");
+  fprintf(fs,"#NTOT,MTOT:\t%-7d %+14.7e\n",sheader.ntot,sheader.mtot);
+  fprintf(fs,"#NPART.G:\t");
   for(i=0;i<=5;i++)
     fprintf(fs,"%-7d\t",sheader.npartg[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#MTOT.G.\t");
+  fprintf(fs,"#MTOT.G.:\t");
   for(i=0;i<=5;i++)
     fprintf(fs,"%+14.7e\t",sheader.mtotg[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#NSUBS\t\t%d\n",sheader.nsubs);
-  fprintf(fs,"#SUBS.ID.\t");
+  fprintf(fs,"#NSUBS:\t\t%d\n",sheader.nsubs);
+  fprintf(fs,"#SUBS.ID.:\t");
   for(i=0;i<sheader.nsubs;i++)
     fprintf(fs,"%-2d ",sheader.stype[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#SUBS.STR.\t");
+  fprintf(fs,"#SUBS.STR.:\t");
   for(i=0;i<sheader.nsubs;i++)
     fprintf(fs,"%-s ",sheader.subtype[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#NPART.SIM.\t");
+  fprintf(fs,"#NPART.SIM.:\t");
   for(i=0;i<sheader.nsubs;i++)
     fprintf(fs,"%-7d ",sheader.nparts[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#MTOT.SIM.\t");
+  fprintf(fs,"#MTOT.SIM.:\t");
   for(i=0;i<sheader.nsubs;i++)
     fprintf(fs,"%+14.7e ",sheader.mtots[i]);
   fprintf(fs,"\n");
-  fprintf(fs,"#ANG.MOM.TOT\t%44s\n",vector2str(sheader.jtot));
-  fprintf(fs,"#POSIT.CM\t%44s\n",vector2str(sheader.rcm));
-  fprintf(fs,"#VELOC.CM\t%44s\n",vector2str(sheader.vcm));
-  fprintf(fs,"#Z,OL,HO,BOX\t%+14.7e %+14.7e %+14.7e %+14.7e\n",
+  fprintf(fs,"#ANG.MOM.TOT:\t%44s\n",vector2str(sheader.jtot));
+  fprintf(fs,"#POSIT.CM:\t%44s\n",vector2str(sheader.rcm));
+  fprintf(fs,"#VELOC.CM:\t%44s\n",vector2str(sheader.vcm));
+  fprintf(fs,"#Z,OL,HO,BOX:\t%+14.7e %+14.7e %+14.7e %+14.7e\n",
 	  sheader.z,sheader.omegaL,sheader.Ho,sheader.boxsize);
-  fprintf(fs,"#REF.FRAME\t%-2d\n",sheader.rf);
+  fprintf(fs,"#REF.FRAME:\t%-2d\n",sheader.rf);
 
   //======================================================================
   //DESCRIBE FIELDS
@@ -916,6 +916,20 @@ int isBlank(char *string)
 }
 
 /*P*/
+int isSpace(char *string)
+{
+  char *pos,tmp[LSIZE];
+  strcpy(tmp,string);
+  pos=strtok(tmp,"1234567890");
+  if(pos==NULL)
+    return 1;
+  else if(strcmp(pos,"\n")==0 || strcmp(pos," ")==0)
+    return 1;
+  else
+    return 0;
+}
+
+/*P*/
 int pause(void)
 {
   fprintf(stderr,"<ENTER TO CONTINUE/CTRL+C TO CANCEL>");
@@ -1013,11 +1027,11 @@ int readLine(char row[],real array[],int nfields)
 {
   char *pos,str[LSIZE],tmp[LSIZE];
   strcpy(str,row);
-  pos=strtok(str," ");
+  pos=strtok(str," \t");
   for(int i=0;i<nfields;i++){
     strcpy(tmp,pos);
     array[i]=strtof(tmp,NULL);
-    pos=strtok(NULL," ");
+    pos=strtok(NULL," \t");
   }
   return 0;
 }
@@ -1027,11 +1041,11 @@ int readLine(char row[],real2 array[],int nfields)
 {
   char *pos,str[LSIZE],tmp[LSIZE];
   strcpy(str,row);
-  pos=strtok(str," ");
+  pos=strtok(str," \t");
   for(int i=0;i<nfields;i++){
     strcpy(tmp,pos);
     array[i]=strtod(tmp,NULL);
-    pos=strtok(NULL," ");
+    pos=strtok(NULL," \t");
   }
   return 0;
 }
@@ -1059,7 +1073,7 @@ int countLines(const char file[])
   int numlines=0;
   char cmd[LSIZE]="",out[LSIZE]="";
   
-  sprintf(cmd,"grep -v '#' %s | wc -l",file);
+  sprintf(cmd,"grep -v '#' %s | grep -v '^$' | wc -l",file);
   systemOutput(cmd,out);
   numlines=atoi(out);
   return numlines;
@@ -1079,8 +1093,16 @@ real2* readColumn(const char fname[],int nlines,int ncols,int col)
   int i=-1;
   while(1){
     fgets(linea,sizeof linea,fd);
+    //fprintf(stdout,"LINE: %s",linea);
     if(feof(fd)) break;
-    if(linea[0]=='#') continue;
+    //Check for comments
+    if(linea[0]=='#' ||
+       isSpace(linea)){
+      //fprintf(stdout,"EXCLUDED LINE\n");
+      continue;
+    }
+    //Check for blank lines
+    //if() continue;
     i++;
     readLine(linea,line,ncols);
     values[i]=line[col-1];
@@ -1105,7 +1127,8 @@ real* readColumns(const char fname[],int nlines,int ncols,int col)
   while(1){
     fgets(linea,sizeof linea,fd);
     if(feof(fd)) break;
-    if(linea[0]=='#') continue;
+    if(linea[0]=='#' ||
+       isSpace(linea)) continue;
     i++;
     readLine(linea,line,ncols);
     values[i]=line[col-1];
