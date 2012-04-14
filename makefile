@@ -24,7 +24,7 @@ cleandata:
 
 clean:
 	@echo -n "Cleaning..."
-	@rm -rf *.o *.out *~ scr/*.pyc
+	@rm -rf *.o *.out *~ scr/*.pyc *.log
 	@echo "Done."
 
 cleanall:cleandata clean
