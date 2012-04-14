@@ -241,6 +241,8 @@ int sumVector(vector* v,real k,vector u1,vector u2);
 
 int crossVector(vector* v,vector u1,vector u2);
 
+real distVector(vector v1,vector v2);
+
 int copyVector(vector* v,vector u);
 
 real magVector(vector v);
@@ -292,5 +294,7 @@ real* readColumns(const char fname[],int nlines,int ncols,int col);
 real2 chiSquare(const gsl_vector* param,pars tmp);
 
 int fitData(real2* X,real2* Y,real2* E,int Ndata,real2 (*func)(real2,pars),int Npars,real2 Params[],real2& cs,real2& pval);
+
+real gravSoft(real x,real h);
 
 #endif
