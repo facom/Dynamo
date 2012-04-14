@@ -3,7 +3,7 @@ CFLAGS=-c -I. -Iutil -g
 LFLAGS=-lm -lgsl -lgslcblas
 PROGRAMS=\
 bin2sim.out transform.out updatesim.out slice.out filter.out sort.out \
-stats.out fit.out scalarmap.out map2dist.out vectormap.out
+stats.out fit.out scalarmap.out map2dist.out vectormap.out derintegral.out
 
 all:dynamo.h
 	make $(PROGRAMS)

@@ -728,13 +728,13 @@ importado en los scripts escritos en este lenguaje y que incluye
 algunas variables y rutinas de interés.
 
 Como un ejemplo imagínemos que quiere calcular de forma automática el
-radio cilíndrico dentro del cual la mitad de las partículas de la
+radio cilíndrico dentro del cual la mitad de la masa de la
 componente discoidal están contenidas.  Para hacerlo es necesario
 realizar varias de las operaciones que han sido descritas aquí con los
 módulos de dynamo.  De forma global las tareas que tenemos que
 realizar son las siguientes:
 
-
+- 
 
 
 

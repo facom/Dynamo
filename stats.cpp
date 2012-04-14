@@ -18,7 +18,7 @@ int main(int argc,char *argv[])
   //PROGRAM VARIBALES
   //////////////////////////////////////////////////////////////
   char datafile[FSIZE]="",statsfile[FSIZE]="",typebin='l';
-  int numcols=0,col=0;
+  int numcols=0,col=0,colw=0;
   int numbin=10,npb=0;
   int numlines;
   int i;
@@ -35,10 +35,13 @@ int main(int argc,char *argv[])
   SET_USAGE(
 "=======================================================================================\n"
 "Usage:\n\n"
-"\t./program -f <datafile> [-s <statsfile>] -n <numcols> -c <col>\n"
+"\t./program -f <datafile> [-s <statsfile>] -n <numcols> -c <col> [-w <col_weight>]\n"
 "\t                         -b <numbins> [-t <type_binning> -N <min_number_per_bin>]\n"
 "\n"
 "Compute basic statistics on column <col> in <datafile> and generate an histogram.\n"
+"Optionally a column <col_weight> with weights used to make weight statistics, could\n"
+"be probided (example mass of particles)\n"
+"\n"
 "Basic statistics are stored in the header of the <statsfile>.\n"
 "The type of bining <type_binning> is selected between (l)inear, lo(g)arithmic,\n"
 "(a)daptative (with <min_number_per_bin> threshold\n"
@@ -61,6 +64,9 @@ int main(int argc,char *argv[])
       break;
     case 'c':
       col=atoi(optarg);
+      break;
+    case 'w':
+      colw=atoi(optarg);
       break;
     //-------------------
     //OPTIONAL 
@@ -117,7 +123,17 @@ int main(int argc,char *argv[])
   }
   if(col==0){
     col=1;
+  }else if(col>numcols){
+    fprintf(stderr,"Error: Column %d out of range (%d)\n",col,numcols);
+    PRINT_USAGE;
+    EXIT;
   }
+  if(colw>numcols){
+    fprintf(stderr,"Error: Column %d out of range (%d)\n",col,numcols);
+    PRINT_USAGE;
+    EXIT;
+  }
+
   if(npb==0){
     npb=numlines/numbin;
   }
@@ -131,6 +147,10 @@ int main(int argc,char *argv[])
     fprintf(stdout,"Statistics file: %s\n",statsfile);
     fprintf(stdout,"Number of columns: %d\n",numcols);
     fprintf(stdout,"Selected column: %d\n",col);
+    if(colw)
+      fprintf(stdout,"Weight column: %d\n",colw);
+    else
+      fprintf(stdout,"Constant weight");
     fprintf(stdout,"Number of bins: %d\n",numbin);
     fprintf(stdout,"Type of binning: %c\n",typebin);
     fprintf(stdout,"Minimum per bin: %d\n",npb);
@@ -146,6 +166,11 @@ int main(int argc,char *argv[])
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   fprintf(stdout,"Reading data from datafile '%s'...\n",datafile);
   real2 *values=readColumn(datafile,numlines,numcols,col);
+  if(colw){
+    real2 *weights=readColumn(datafile,numlines,numcols,colw);
+    
+  }
+
 
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //STATISTICS
