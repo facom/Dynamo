@@ -342,6 +342,35 @@ int main(int argc,char *argv[])
       else fieldmap[p]+=parts[i].m;
     }
   case 'g':
+    for(k=0;k<nz;k++){
+      z=zini+k*dz;
+      for(i=0;i<nx;i++){
+	x=xini+i*dx;
+	for(j=0;j<ny;j++){
+	  y=yini+j*dy;
+	}
+      }
+    }
+    for(i=0;i<ndata;i++){
+      x=GET_MEMBER(parts[i],real,xoff);
+      y=GET_MEMBER(parts[i],real,yoff);
+      z=GET_MEMBER(parts[i],real,zoff);
+      if(x<xini || x>xend) continue;
+      if(y<yini || y>yend) continue;
+      if(z<zini || z>zend) continue;
+
+      if(ccoord=='s') z=asin(z/x);//COMPUTE THETA
+      ibox=(int)(x-xini)/dx;
+      jbox=(int)(y-yini)/dy;
+      kbox=(int)(z-zini)/dz;
+      p=ibox+jbox*nx+kbox*nx*ny;
+      /*
+      if(cfield=='n') fieldmap[ibox][jbox][kbox]+=1;
+      else fieldmap[ibox][jbox][kbox]+=parts[i].m;
+      */
+      if(cfield=='n') fieldmap[p]+=1;
+      else fieldmap[p]+=parts[i].m;
+    }
     break;
   }
 
