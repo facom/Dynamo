@@ -817,6 +817,14 @@ int crossVector(vector* v,vector u1,vector u2)
 }
 
 /*P*/
+real distVector(vector v1,vector v2)
+{
+  vector dx;
+  sumVector(&dx,-1,v2,v1);
+  return magVector(dx);
+}
+
+/*P*/
 int copyVector(vector* v,vector u)
 {
   v->x=u.x;
