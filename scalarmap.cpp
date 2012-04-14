@@ -343,11 +343,14 @@ int main(int argc,char *argv[])
     }
   case 'g':
     for(k=0;k<nz;k++){
-      z=zini+k*dz;
+      z=zini+k*dz+dz/2;
       for(i=0;i<nx;i++){
-	x=xini+i*dx;
+	x=xini+i*dx+dx/2;
 	for(j=0;j<ny;j++){
-	  y=yini+j*dy;
+	  y=yini+j*dy+dy/2;
+	  
+	  p=i+j*nx+k*nx*ny;
+	  fieldmap[p]=phi;
 	}
       }
     }
