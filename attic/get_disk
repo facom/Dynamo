@@ -6,10 +6,9 @@ USAGE="""Usage:
 
 Examples:
 
-./script <simfile> <epscrit>
+./script SNAP_000.sim -1.0 2.0
 
-Get the disk from th simulation file <simfile>.sim using the critical
-value of the epsilon <epscrit>
+Get the disk from th simulation file.
 """
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,31 +19,19 @@ value of the epsilon <epscrit>
 #GET PARAMETERS
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 simfile,argv=shiftList(argv)
-simfile="%s.sim"%simfile
 if not simfile:
     errorMsg("No simulation file was provided...",USAGE)
 if not isfile(simfile):
     errorMsg("Simulation file '%s' does not exist..."%simfile,USAGE)
 
-epscrit,argv=shiftList(argv)
-if not mineps:epscrit=0.5
+mineps,argv=shiftList(argv)
+if not mineps:mineps=-MAXREAL
+maxeps,argv=shiftList(argv)
+if not maxeps:maxeps=+MAXREAL
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #EXECUTE PIPELINE
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#==================================================
-#CHANGE TO CM
-#==================================================
-newfile="/tmp/%s.trn"%simfile
-poscm=getHeader(simfile,"POSIT.CM")
-velcm=getHeader(simfile,"VELOC.CM")
-angmom=getHeader(simfile,"ANG.MOM.TOT")
-shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 1"%(simfile,
-                                                                     newfile,
-                                                                     ",".join(poscm),
-                                                                     ",".join(velcm),
-                                                                     ",".join(angmom)))
-shellExec(RUN+"updatesim.out -f %s"%newfile)
 
 #==================================================
 #HISTOGRAM OF EPSILON

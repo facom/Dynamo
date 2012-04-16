@@ -1,9 +1,91 @@
 #!/usr/bin/env python
 from dynamo import *
 
+#######################################################################
+#PARAMETERS
+#######################################################################
 simfile="SNAP_000.sim"
+dcmfile="%s.dcm"%simfile
+Rmax=10
+numR=100
+numAng=4
 
+if isfile("%s.pot"%simfile):
+   print "Potential profile already computed for simulation '%s'..."%simfile
+   over=raw_input("Do you want to overwrite (y/n)?...")
+
+if not 'n' in over:
+   shellExec("rm -rf /tmp/%s* && rm -rf %s.pot"%(simfile,simfile))
+
+#######################################################################
+#CHECK PARAMETERS
+#######################################################################
 if not isfile(simfile):
-   print "Primero debe generar el archivo de la simulacion..."
+   print "First you have to generate the simulation ascii file '%s'.  Use bin2sim.out.."%simfile
    exitScript(0)
+if not isfile(dcmfile):
+   print "You must generate the CM information about the disk in the file '%s'.  Use get_disk..."%dcmfile
+   exitScript(0)
+
+#######################################################################
+#READ DISK INFORMATION
+#######################################################################
+cmdata=np.loadtxt(dcmfile)
+
+#######################################################################
+#PLACE PARTICLES IN THE CENTER OF MASS OF THE DISK
+#######################################################################
+trnfile="/tmp/%s.trn"%simfile
+print "Transforming data to the center of mass of the disk...",
+if not isfile(trnfile):
+   shellExec(
+      RUN+"transform.out -V -s %s -t %s -o %e,%e,%e -e %e,%e,%e -j %e,%e,%e -l 627"%(simfile,
+                                                                                     trnfile,
+                                                                                     cmdata[0,0],cmdata[0,1],cmdata[0,2],
+                                                                                     cmdata[1,0],cmdata[1,1],cmdata[1,2],
+                                                                                     cmdata[2,0],cmdata[2,1],cmdata[2,2],
+                                                                                     )
+      )
+   print "Done."
+else:
+   print "\n\tTransformed data already generated..."
+
+#######################################################################
+#CREATE A SCALAR MAP OF THE POTENTIAL IN CYLINDRICAL COORDINATES
+#######################################################################
+mapfile="%s.map"%trnfile
+print "Generating gravitational potential map...",
+if not isfile(mapfile):
+   shellExec(
+      RUN+"scalarmap.out -V -f %s -m %s -s gravitational_potential -c cyl -i -,-,-0.1 -e %e,-,0.1 -n %d,%d,1"%(trnfile,mapfile,Rmax,numR,numAng)
+      )
+   print "Done."
+else:
+   print "\n\tMap file already generated..."
+
+#######################################################################
+#COLLAPSE POTENTIAL IN THE ANGULAR DIRECTION
+#######################################################################
+potfile="%s.pot"%mapfile
+print "Generating gravitational potential distribution...",
+if not isfile(potfile):
+   shellExec(
+      RUN+"map2dist.out -V -m %s -d %s -t 1D -x 0 -o a"%(mapfile,potfile)
+      )
+   print "Done."
+else:
+   print "\n\tCollapsed file already generated..."
+
+#######################################################################
+#COMPUTE DERIVATIVES ALONG R
+#######################################################################
+fpotfile="%s.pot"%simfile
+print "Computing properties of the potential...",
+if not isfile(fpotfile):
+   shellExec(
+      RUN+"derintegral.out -V -f %s -d %s -n 2 -x 1 -y 2"%(potfile,fpotfile)
+      )
+   print "Done."
+else:
+   print "\n\tPropeties of the potential already computed..."
 

@@ -109,6 +109,28 @@ def gnuPlot(cmd):
     shellExec("gnuplot %s"%plotfile)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#ROUTINES RELATED TO DYNAMO MODULES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+def filterFile(simfile,filfile,col,minval,maxval,equal='false'):
+    pass
+
+def transFile(simfile,trnfile,
+              poscm="0,0,0",velcm="0,0,0",angmom="1E-6,1E-6,1",
+              rflabel=0):
+    pass
+
+def scalarMap(simfile,mapfile,scalarmap,ngrid,
+              coords='car',ini='-,-,-',end='-,-,-'):
+    pass
+
+def updateSim(simfile):
+    pass
+
+def statsFile(simfile,statfile,col,numbins,
+              typebin='l',npb=100):
+    pass
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #INFORMATION ABOUT THE PROGRAM
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PROGRAM,argv=shiftList(argv)

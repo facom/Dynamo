@@ -1127,8 +1127,8 @@ real* readColumns(const char fname[],int nlines,int ncols,int col)
   char linea[LSIZE]="";
   file fd=fileOpen(fname,"r");
  
-  line=(real*)malloc(ncols*sizeof(real2));
-  values=(real*)malloc(nlines*sizeof(real2));
+  line=(real*)malloc(ncols*sizeof(real));
+  values=(real*)malloc(nlines*sizeof(real));
 
   //Read values
   int i=-1;
