@@ -1,18 +1,30 @@
 #!/usr/bin/env python
-#coding:encode:utf-8
+#coding:utf-8
 from dynamo import *
 
 #informacion general
 simulation="SNAP"
 numsnapshot="000"
-simfile=="%s_%s.sim"%(simulation,numsnapshot)
+simfile="%s_%s.sim"%(simulation,numsnapshot)
 
 """
 ################################################
 1- convertir gadget a ascii
 ################################################
 """
+print "\n######################################################"
+print "This script calculates the surface density with dynamo"
+print "######################################################\n"
 
+if not isfile(simfile):
+    print "Becoming from binary to ascii...",
+    shellExec(RUN+"bin2sim.out -s %s -n %s -S"%(simulation,numsnapshot))
+    print "Done."
+    print "Updating header...",
+    shellExec(RUN+"updatesim.out -f %s"%simfile)
+    print "Done."
+else:
+    print "The file of simulation '%s' already exist..."%simfile
 """
 ################################################
 2- transformar todo al CM del sistema
