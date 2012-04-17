@@ -36,3 +36,6 @@ updaterepo:
 	@echo -n "Updating repo..."
 	git commit -am "Commit..."
 	git push origin master
+
+pull:
+	git pull
