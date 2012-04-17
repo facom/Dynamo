@@ -36,8 +36,11 @@ if not isfile(simfile):
 #GRID PROPERTIES
 #==================================================
 mins,argv=shiftList(argv)
+if not mins:mins="-,-,-"
 maxs,argv=shiftList(argv)
+if not maxs:maxs="-,-,-"
 nums,argv=shiftList(argv)
+if not nums:nums="10,10,10"
 
 field,argv=shiftList(argv)
 if not field:

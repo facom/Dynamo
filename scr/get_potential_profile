@@ -1,31 +1,42 @@
 #!/usr/bin/env python
 from dynamo import *
+USAGE="""Usage:
+
+\t./script <simulation_name> <Rmax> <numR> <numAng>
+
+Get the potential profile
+"""
 
 #######################################################################
 #PARAMETERS
 #######################################################################
-simfile="SNAP_000.sim"
-dcmfile="%s.dcm"%simfile
-Rmax=10
-numR=100
-numAng=4
+simname,argv=shiftList(argv)
+simfile="%s.sim"%simname
+if not simfile:
+    errorMsg("No simulation file was provided...",USAGE)
+if not isfile(simfile):
+   print "First you have to generate the simulation ascii file '%s'.  Use bin2sim.out.."%simfile
+   exitScript(0)
 
+dcmfile="%s.dcm"%simfile
+if not isfile(dcmfile):
+   print "You must generate the CM information about the disk in the file '%s'.  Use get_disk..."%dcmfile
+   exitScript(0)
+
+Rmax,argv=shiftList(argv)
+if not Rmax:Rmax=10
+numR,argv=shiftList(argv)
+if not numR:numR=100
+numAng,argv=shiftList(argv)
+if not numAng:numAng=4
+
+over='y'
 if isfile("%s.pot"%simfile):
    print "Potential profile already computed for simulation '%s'..."%simfile
    over=raw_input("Do you want to overwrite (y/n)?...")
 
 if not 'n' in over:
    shellExec("rm -rf /tmp/%s* && rm -rf %s.pot"%(simfile,simfile))
-
-#######################################################################
-#CHECK PARAMETERS
-#######################################################################
-if not isfile(simfile):
-   print "First you have to generate the simulation ascii file '%s'.  Use bin2sim.out.."%simfile
-   exitScript(0)
-if not isfile(dcmfile):
-   print "You must generate the CM information about the disk in the file '%s'.  Use get_disk..."%dcmfile
-   exitScript(0)
 
 #######################################################################
 #READ DISK INFORMATION
@@ -57,7 +68,7 @@ mapfile="%s.map"%trnfile
 print "Generating gravitational potential map...",
 if not isfile(mapfile):
    shellExec(
-      RUN+"scalarmap.out -V -f %s -m %s -s gravitational_potential -c cyl -i -,-,-0.1 -e %e,-,0.1 -n %d,%d,1"%(trnfile,mapfile,Rmax,numR,numAng)
+      RUN+"scalarmap.out -V -f %s -m %s -s gravitational_potential -c cyl -i -,-,-0.1 -e %s,-,0.1 -n %s,%s,1"%(trnfile,mapfile,Rmax,numR,numAng)
       )
    print "Done."
 else:

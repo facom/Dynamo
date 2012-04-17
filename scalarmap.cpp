@@ -341,6 +341,7 @@ int main(int argc,char *argv[])
       if(cfield=='n') fieldmap[p]+=1;
       else fieldmap[p]+=parts[i].m;
     }
+    break;
   case 'g':
     vector point;
     real phi,h,d;

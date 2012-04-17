@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+from dynamo import *
+USAGE="""Usage:
+
+\t./script <simulation_file>
+
+Center the simulation file <simulation_file>.sim in the center of mass
+and with angular momentum axis.
+
+"""
+simname,argv=shiftList(argv)
+simfile="%s.sim"%simname
+if not simfile:
+    errorMsg("No simulation file was provided...",USAGE)
+if not isfile(simfile):
+    errorMsg("Simulation file '%s' does not exist..."%simfile,USAGE)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#EXECUTE PIPELINE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#==================================================
+#CHANGE TO CM
+#==================================================
+cmfile="%s"%simfile
+print "Computing center of mass for simulation '%s'..."%simfile,
+rflabel=getHeader(simfile,"REF.FRAME")
+if rflabel[0]!="644":
+    poscm=getHeader(simfile,"POSIT.CM")
+    velcm=getHeader(simfile,"VELOC.CM")
+    angmom=getHeader(simfile,"ANG.MOM.TOT")
+    shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 644"%(simfile,
+                                                                           cmfile,
+                                                                           ",".join(poscm),
+                                                                           ",".join(velcm),
+                                                                           ",".join(angmom))
+              )
+    shellExec(RUN+"updatesim.out -f %s"%cmfile)
+    print "Done."
+else:
+    print "\n\tSimulation is already at its center of mass..."
