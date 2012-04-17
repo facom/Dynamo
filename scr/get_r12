@@ -43,7 +43,7 @@ if not isfile(newfile):
     poscm=getHeader(simfile,"POSIT.CM")
     velcm=getHeader(simfile,"VELOC.CM")
     angmom=getHeader(simfile,"ANG.MOM.TOT")
-    shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 1"%(simfile,
+    shellExec(RUN+"transform.out -V -s %s -t %s -o %e -e %e -j %e -l 1"%(simfile,
                                                                          newfile,
                                                                          ",".join(poscm),
                                                                          ",".join(velcm),

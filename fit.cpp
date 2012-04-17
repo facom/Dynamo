@@ -203,7 +203,7 @@ int main(int argc,char *argv[])
   else
     fprintf(stdout,"\tData cannot be fitted with function\n");
 
-  file fs=fileOpen(fitfile,"w");
+   file fs=fileOpen(fitfile,"w");
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   //STORING 
   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

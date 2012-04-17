@@ -1064,6 +1064,7 @@ int systemOutput(const char cmd[],char out[])
   char comm[FSIZE]="",tmpf[FSIZE]="",line[LSIZE]="";
   sprintf(tmpf,"/tmp/sysout");
   sprintf(comm,"%s > %s",cmd,tmpf);
+  VPRINTF(2)("TEMPORAL FILE: %s\n",tmpf);
   system(comm);
   file f=fileOpen(tmpf,"r");
   while(1){
@@ -1071,12 +1072,14 @@ int systemOutput(const char cmd[],char out[])
     if(feof(f)) break;
     strcat(out,line);
   }
+  sprintf(comm,"rm %s",tmpf);
+  system(comm);
   fclose(f);
   return 0;
 }
 
 /*P*/
-int countLines(const char file[])
+int countLines2(const char file[])
 {
   int numlines=0;
   char cmd[LSIZE]="",out[LSIZE]="";
@@ -1085,6 +1088,25 @@ int countLines(const char file[])
   systemOutput(cmd,out);
   numlines=atoi(out);
   return numlines;
+}
+
+/*P*/
+int countLines(const char file[])
+{
+  int numlines=0;
+  char line[LSIZE]="";
+  //*
+  File f=fileOpen(file,"r");
+  while(1){
+    fgets(line,sizeof line,f);
+    if(feof(f)) break;
+    if(line[0]=='#' ||
+       isSpace(line)) continue;
+    numlines++;
+  }
+  fclose(f);
+  return numlines;
+  //*/
 }
 
 /*P*/

@@ -128,6 +128,7 @@ typedef double real2;
 typedef double* darray;
 typedef char* cadena;
 typedef FILE* file;
+typedef FILE* File;
 typedef void* pars;
 
 typedef struct{

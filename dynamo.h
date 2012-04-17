@@ -128,6 +128,7 @@ typedef double real2;
 typedef double* darray;
 typedef char* cadena;
 typedef FILE* file;
+typedef FILE* File;
 typedef void* pars;
 
 typedef struct{
@@ -284,6 +285,8 @@ int readLine(char row[],real array[],int nfields);
 int readLine(char row[],real2 array[],int nfields);
 
 int systemOutput(const char cmd[],char out[]);
+
+int countLines2(const char file[]);
 
 int countLines(const char file[]);
 
