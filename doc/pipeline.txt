@@ -1,0 +1,67 @@
+Basic pipeline:
+
+0) Get snapshot, gadget parameters and substructure description file
+   (optional)
+
+   $ cp -rf <simulation_name>/<isolated_or_merger>/<simulation_name>_<snapshot> .
+   $ cp -rf <simulation_name>/<isolated_or_merger>/<simulation_name>.param .
+
+   Product: <simulation_name>_<snapshot>[.param]
+
+   NOTE: Herein <simulation_name> = <simulation_name>_<snapshot>
+
+1) Convert from binary to ascii
+
+   $ bin2sim.out -s <simulation_name> -n <snapshot> [-S]
+
+   Product: <simulation_name>.sim
+
+2) Center simulation
+
+   $ center_simulation <simulation_name>
+
+   Product: <simulation_name>.sim (reference label 644)
+   
+2) Manually check data against the original simulation parameters.
+   Check number of particles, masses, softening factors.
+
+3) Generate an image
+   
+   $ gen_image <simulation_name>.sim -50,-50,-50 50,50,50 100,100,100
+
+   Products: <simulation_name>.sim.map{.{xy,xz,yz}{.png}}
+
+4) Get disk component properties:
+
+   $ get_disk_properties <simulation_name> <eps_crit> <eps_min> <eps_max>
+
+   Products: <simulation_name>.sim.{dcm,eps{.png}}
+
+Pipeline to study disk stability:
+
+5) Compute potential profile
+
+   $ get_potential_profile <simulation_name> <R_max> <num_annulii> <num_angles>
+
+   Products: <simulation_name>.sim.pot
+
+6) Smooth the potential profile
+
+   Products: <simulation_name>.sim.pot
+
+7) Compute the dispersion of velocities
+
+   Products: <simulation_name>.sim.vel
+
+8) Compute the radial density
+
+   Products: <simulation_name>.sim.dns
+
+9) Compute the epyciclic fequency over the disk surface
+
+   Products: <simulation_name>.sim.epy
+
+10) Compute the Toomre parameter
+
+   Products: <simulation_name>.sim.tmr
+
