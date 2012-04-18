@@ -40,6 +40,18 @@ int getFunction(const char funcname[])
     FXtest=1.0;
   }
 
+  if(strcmp(funcname,"zeroGaussianBell")==0){
+    FFunc=zeroGaussianBell;
+    FNpars=2;
+    FXtest=1.0;
+  }
+  
+  if(strcmp(funcname,"oneGaussianBell")==0){
+    FFunc=oneGaussianBell;
+    FNpars=2;
+    FXtest=1.0;
+  }
+
   if(strcmp(funcname,"exponentialDistribution")==0){
     FFunc=exponentialDistribution;
     FNpars=3;
@@ -89,6 +101,34 @@ real2 gaussianBell(real2 x,pars params)
   real2 y;
   
   y=ps[0]*exp(-(x-ps[1])*(x-ps[1])/(ps[2]*ps[2]));
+
+  return y;
+}
+
+/*P*/
+real2 zeroGaussianBell(real2 x,pars params)
+{
+  /*
+    ps[0] exp [ - (x-0)^2 / ps[2]^2 ]
+  */
+  real2* ps=(real2*)params;
+  real2 y;
+  
+  y=ps[0]*exp(-(x-0.0)*(x-0.0)/(ps[1]*ps[1]));
+
+  return y;
+}
+
+/*P*/
+real2 oneGaussianBell(real2 x,pars params)
+{
+  /*
+    ps[0] exp [ - (x-1.0)^2 / ps[2]^2 ]
+  */
+  real2* ps=(real2*)params;
+  real2 y;
+  
+  y=ps[0]*exp(-(x-1.0)*(x-1.0)/(ps[1]*ps[1]));
 
   return y;
 }
