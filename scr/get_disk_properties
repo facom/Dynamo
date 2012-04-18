@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+from dynamo import *
+USAGE="""Usage:
+
+\t./script <simulation_name> <epscrit> <epsmin> <epsmax> 
+
+Get the disk from th simulation file <simfile>.sim using the critical
+value of the epsilon <epscrit>
+"""
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#ROUTINES
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#GET PARAMETERS
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+simname,argv=shiftList(argv)
+simfile="%s.sim"%simname
+if not simfile:
+    errorMsg("No simulation file was provided...",USAGE)
+if not isfile(simfile):
+    errorMsg("Simulation file '%s' does not exist..."%simfile,USAGE)
+
+epscrit,argv=shiftList(argv)
+if not epscrit:epscrit=0.5
+mineps,argv=shiftList(argv)
+if not mineps:mineps=-MAXREAL
+maxeps,argv=shiftList(argv)
+if not maxeps:maxeps=+MAXREAL
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#EXECUTE PIPELINE
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#==================================================
+#CHANGE TO CM
+#==================================================
+cmfile="%s"%simfile
+print "Computing center of mass for simulation '%s'..."%simfile,
+rflabel=getHeader(simfile,"REF.FRAME")
+if rflabel[0]!="644":
+    poscm=getHeader(simfile,"POSIT.CM")
+    velcm=getHeader(simfile,"VELOC.CM")
+    angmom=getHeader(simfile,"ANG.MOM.TOT")
+    shellExec(RUN+"transform.out -V -s %s -t %s -o %s -e %s -j %s -l 644"%(simfile,
+                                                                           cmfile,
+                                                                           ",".join(poscm),
+                                                                           ",".join(velcm),
+                                                                           ",".join(angmom))
+              )
+    shellExec(RUN+"updatesim.out -f %s"%cmfile)
+    print "Done."
+else:
+    print "\n\tSimulation is already at its center of mass..."
+
+#==================================================
+#GET AN HISTOGRAM OF EPSILON FOR THIS SIMULATION
+#==================================================
+hisfile="%s.eps"%simfile
+print "Computing statistics of epsilon and storing them in '%s'..."%hisfile,
+over=""
+if isfile(hisfile):
+    over=raw_input("\nFile '%s' already exist.  Do you want to overwrite?(y/n) (enter to overwrite)..."%hisfile)
+
+if 'n' in over:
+    print "\n\tStatistics already computed..."
+else:
+    filfile="/tmp/%s.fil"%simfile
+    shellExec(
+        RUN+"filter.out -V -f %s -s %s -n 25 -c 25 -m %s -M %s"%(simfile,
+                                                                 filfile,
+                                                                 mineps,maxeps)
+        )
+    shellExec(RUN+"stats.out -V -f %s -s %s -n 25 -c 25 -b 100"%(filfile,
+                                                                 hisfile))
+    shellExec("rm -rf %s"%filfile)
+    print "Done."
+
+hisplot="%s.png"%hisfile
+gnuPlot("""
+datafile='%s'
+imgfile='%s'
+set term png
+set output imgfile
+plot datafile u 2:5 w his ls 1, '' u 2:5:8 w err ls 1
+"""%(hisfile,hisplot))
+
+#==================================================
+#FILTER PARTICLES ACCORDING TO EPSILON
+#==================================================
+dskfile="/tmp/%s.eps%s.dsk"%(simname,epscrit)
+print "Filtering particles according to epsilon as '%s'..."%dskfile,
+if not isfile(dskfile):
+    shellExec(
+        RUN+"filter.out -V -f %s -s %s -n 25 -c 25 -m %s"%(simfile,
+                                                           dskfile,
+                                                           epscrit)
+        )
+    shellExec(
+        RUN+"updatesim.out -V -f %s"%(dskfile)
+        )
+    print "Done."
+else:
+    print "\n\tDisk already filtered with epscrit = %s..."%epscrit
+
+#==================================================
+#RETURN CENTER OF MASS AND ANGULAR MOMENTUM OF DISK
+#==================================================
+poscm=getHeader(dskfile,"POSIT.CM")
+velcm=getHeader(dskfile,"VELOC.CM")
+angmom=getHeader(dskfile,"ANG.MOM.TOT")
+cmfile="%s.dcm"%simfile
+print "Writing CM information in '%s'..."%cmfile
+f=open(cmfile,"w")
+f.write(" ".join(poscm)+"\n");
+f.write(" ".join(velcm)+"\n");
+f.write(" ".join(angmom)+"\n");
+f.close()

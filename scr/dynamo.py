@@ -4,7 +4,7 @@
 import os,sys,commands,tempfile,time
 import numpy as np
 import commands
-#from pylab import *
+from pylab import *
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #ALIASES
